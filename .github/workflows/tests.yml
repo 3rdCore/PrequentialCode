@@ -1,4 +1,4 @@
-name: Python Package Pytest
+name: Unit testing 🔬
 on: [push]
 
 jobs:
