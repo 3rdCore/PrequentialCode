@@ -1,4 +1,4 @@
-name: pre-commit 🔎
+name: Pre-commit Hook 🔎
 
 on:
   pull_request:
