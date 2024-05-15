@@ -1,0 +1,1 @@
+# forward() needs to take as input x which is a dict of (seq, batch, *) and return z, which is a tuple of tensors of shape (seq, batch, *). Note that each index of z on seq dimension should only depend on indices in x that came before.
