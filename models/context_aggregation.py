@@ -13,7 +13,7 @@ class ContextAggregator(ABC, nn.Module):
             x (dict[str, Tensor]): Input data, each with shape (samples, tasks, *).
 
         Returns:
-            dict[str, Tensor]: Aggregated context z representing the model parameters given all previous samples, each with shape (samples, tasks, *). Note that each index of z along the 'samples' dimension should only depend on prior samples in x.
+            dict[str, Tensor]: Aggregated context z representing the model parameters given all previous samples, each with shape (samples + 1, tasks, *). Note that each index of z along the 'samples' dimension should only depend on prior samples in x.
         """
         pass
 
