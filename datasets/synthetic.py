@@ -25,7 +25,7 @@ class SyntheticDataset(ABC, TaskDistDataset):
         return len(self.data[name])
 
     @abstractmethod
-    def gen_data(self, n_samples: int) -> tuple[dict[str, Tensor], dict[str, Iterable[Any]]]:
+    def gen_data(self, n_samples: int) -> tuple[dict[str, Tensor], dict[str, Iterable]]:
         pass
 
     def __getitem__(self, index: int) -> tuple[dict[str, Tensor], dict[str, Any]]:

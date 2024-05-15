@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Any, Iterable
+from typing import Any
 
 import torch
 from lightning import LightningDataModule
@@ -14,14 +14,14 @@ class TaskDistDataset(ABC, MapDataPipe):
         pass
 
     @abstractmethod
-    def __getitem__(self, index: int) -> tuple[dict[str, Tensor], dict[str, Iterable[Any]]]:
+    def __getitem__(self, index: int) -> tuple[dict[str, Tensor], dict[str, Any] | None]:
         """Get multiple samples from multiple tasks.
 
         Args:
             index (int): task index.
 
         Returns:
-            tuple[dict[str, Tensor], dict[str, Iterable[Any]]]: data with shapes (samples, *shape), task parameters.
+            tuple[dict[str, Tensor], dict[str, Any] | None]: data with shapes (samples, *shape), task parameters (optional).
         """
         pass
 
@@ -47,7 +47,7 @@ class ICLDataModule(LightningDataModule):
             batch_size=self.hparams.batch_size,
             num_workers=self.hparams.num_workers,
             shuffle=True,
-            collate_fn=batch_dim1,
+            collate_fn=custom_collate_fn,
         )
 
     def val_dataloader(self) -> DataLoader:
@@ -56,14 +56,23 @@ class ICLDataModule(LightningDataModule):
             batch_size=self.hparams.batch_size,
             num_workers=self.hparams.num_workers,
             shuffle=False,
-            collate_fn=batch_dim1,
+            collate_fn=custom_collate_fn,
         )
 
 
-# Custom collate function to stack batches along dim=1 rather than dim=0
-def batch_dim1(batch):
-    batch_dict = {}
-    for key in batch[0]:
-        stacked = torch.stack([item[key] for item in batch], dim=1)
-        batch_dict[key] = stacked
-    return batch_dict
+def custom_collate_fn(batch):
+    """1. Stacks the batches along dimension 1 so that sequences can be along dimension 0.
+    2. Stacks the task parameters into a list.
+    """
+    batch_dict_x, batch_dict_params = {}, {}
+    batch_x, batch_params = zip(*batch)
+    for key in batch_x[0].keys():
+        stacked = torch.stack([item[key] for item in batch_x], dim=1)
+        batch_dict_x[key] = stacked
+    if batch_params[0] is None:
+        batch_dict_params = None
+    else:
+        for key in batch_params[0].keys():
+            stacked = [item[key] for item in batch_params]
+            batch_dict_params[key] = stacked
+    return batch_dict_x, batch_dict_params
