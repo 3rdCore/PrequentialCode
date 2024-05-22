@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from typing import Any
 
 import torch
+from beartype import beartype
 from lightning import LightningDataModule
 from torch import Tensor
 from torch.utils.data import DataLoader
@@ -27,6 +28,7 @@ class TaskDistDataset(ABC, MapDataPipe):
 
 
 class ICLDataModule(LightningDataModule):
+    @beartype
     def __init__(
         self,
         train_dataset: TaskDistDataset,
@@ -41,6 +43,7 @@ class ICLDataModule(LightningDataModule):
 
         # setup
 
+    @beartype
     def train_dataloader(self) -> DataLoader:
         return DataLoader(
             self.train_dataset,
@@ -50,6 +53,7 @@ class ICLDataModule(LightningDataModule):
             collate_fn=custom_collate_fn,
         )
 
+    @beartype
     def val_dataloader(self) -> DataLoader:
         return DataLoader(
             self.val_dataset,
@@ -60,6 +64,7 @@ class ICLDataModule(LightningDataModule):
         )
 
 
+@beartype
 def custom_collate_fn(batch):
     """1. Stacks the batches along dimension 1 so that sequences can be along dimension 0.
     2. Stacks the task parameters into a list.

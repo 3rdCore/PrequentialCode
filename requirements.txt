@@ -6,3 +6,4 @@ torchdata
 wandb
 omegaconf
 hydra-core
+beartype

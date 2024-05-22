@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 
 import torch
+from beartype import beartype
 from torch import Tensor, nn
 
 

@@ -4,6 +4,7 @@ from typing import Iterable, Literal
 
 import numpy as np
 import torch
+from beartype import beartype
 from lightning import LightningModule
 from torch import Tensor
 from torch.nn import functional as F
@@ -15,6 +16,7 @@ from models.prediction import Predictor
 class MetaOptimizer(ABC, LightningModule):
     MetaObjective = Literal["train", "prequential"]
 
+    @beartype
     def __init__(
         self,
         meta_objective: MetaObjective,
@@ -30,6 +32,7 @@ class MetaOptimizer(ABC, LightningModule):
         self.context_aggregator = context_aggregator
         self.predictor = predictor
 
+    @beartype
     def forward(
         self, x: dict[str, Tensor]
     ) -> tuple[
@@ -81,6 +84,7 @@ class MetaOptimizer(ABC, LightningModule):
 
         return preds_train, preds_nexttoken, x_train, x_nexttoken, z_train, z_nexttoken
 
+    @beartype
     def training_step(self, data, batch_idx):
         x, task_params = data
         if task_params is not None:
@@ -99,6 +103,7 @@ class MetaOptimizer(ABC, LightningModule):
         )
         return loss
 
+    @beartype
     def validation_step(self, data, batch_idx):
         x, task_params = data
         if task_params is not None:
@@ -116,6 +121,7 @@ class MetaOptimizer(ABC, LightningModule):
             task_params,
         )
 
+    @beartype
     def losses_and_metrics(
         self,
         preds_train: dict[str, Tensor],
