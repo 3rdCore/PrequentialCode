@@ -1,1 +1,8 @@
 pre-commit
+numpy
+torch
+lightning
+torchdata
+wandb
+omegaconf
+hydra-core
