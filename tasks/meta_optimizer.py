@@ -10,7 +10,7 @@ from torch import Tensor
 from torch.nn import functional as F
 
 from models.meta_learner.context_aggregator import ContextAggregator
-from models.prediction_head.prediction import Predictor
+from models.prediction_head.predictor import Predictor
 
 
 class MetaOptimizer(ABC, LightningModule):
