@@ -21,7 +21,7 @@ class Predictor(ABC, nn.Module):
 
     @abstractmethod
     def forward(self, x: dict[str, Tensor], z: dict[str, Tensor]) -> dict[tuple[str, str], Tensor]:
-        """Predict given inputs x and model parameters z.
+        """Predict different outputs given inputs x and model parameters z.
 
         Args:
             x (dict[str, Tensor]): Input data, each with shape (samples, tasks, *).
@@ -60,8 +60,7 @@ class VanillaPredictor(Predictor):
         Args:
             hidden_dim (int): The dimension of the hidden layer in the MLP.
 
-        The predictor attribute is a dictionary where each key is a tuple of an input name and an output name,
-        and each value is a Multi-Layer Perceptron (MLP) that takes the corresponding input and context information, and outputs a prediction on the corresponding output.s
+        we define a Multi-Layer Perceptron (MLP) for each tuple (input name, output name). each MLP takes the corresponding input and context information, and outputs a prediction on the corresponding output space.
         """
 
         self.hidden_dim = hidden_dim
@@ -77,7 +76,7 @@ class VanillaPredictor(Predictor):
             )
             for input in self.x_dim
             for output in self.y_dim
-        }  # Cartesian product of x_dim and y_dim
+        }  # Cartesian product of x_dim and y_dim, even tough most of the time it will be only one element for each (e.g. predict y given x)
 
     @beartype
     def forward(self, x: dict[str, Tensor], z: dict[str, Tensor]) -> dict[tuple[str, str], Tensor]:
@@ -85,7 +84,7 @@ class VanillaPredictor(Predictor):
 
         Args:
             x (dict[str, Tensor]): Input data, each with shape (samples, tasks, *).
-            z (dict[str, Tensor]): Aggregated context information, each with shape (samples in context , tasks, *).
+            z (dict[str, Tensor]): Aggregated context information, each with shape (samples in context, tasks, *).
 
         Returns:
             dict[tuple[str, str], Tensor]: Predicted values for each tuple (input,output), each with shape (samples, tasks, *).
