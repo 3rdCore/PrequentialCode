@@ -24,4 +24,6 @@ model:
     n_layers: 8
     layer_norm_eps: 1e-5
   prediction_head:
-    _target_: models.prediction_head
+    _target_: models.prediction_head.VanillaPredictor
+    n_hidden: 512
+    n_layers: 2
