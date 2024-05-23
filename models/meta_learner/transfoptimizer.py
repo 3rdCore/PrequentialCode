@@ -52,7 +52,6 @@ class Transfoptimizer(ContextAggregator):
             name: torch.cat([torch.zeros_like(x[name][:1, ...]), x[name]], dim=0) for name in x
         }  # add a zero tensor to the beginning of the sequence
 
-        # mask : uppertriangular mask + first col masked (padding token)
         mask = {
             name: torch.triu(torch.ones(x[name].shape[0], x[name].shape[0]), diagonal=1)
             .bool()
@@ -60,7 +59,7 @@ class Transfoptimizer(ContextAggregator):
             .unsqueeze(0)
             .repeat_interleave(x[name].shape[1] * x[name].shape[2], dim=0)
             for name in x
-        }  # TODO double-check mask
+        }  # defines a causal transformer TODO double-check mask
         features = {name: self.context_encoder[name].forward(x[name], mask=mask[name]) for name in x}
         return features
 
