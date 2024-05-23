@@ -17,13 +17,11 @@ logger:
 
 
 model:
-  meta_learner:
-    _target_: models.meta_learner.Transfoptimizer
+    _target_: models.context_aggregator.Transfoptimizer
     n_heads: 4
     n_hidden: 512
     n_layers: 8
     layer_norm_eps: 1e-5
-  prediction_head:
-    _target_: models.prediction_head.VanillaPredictor
+    _target_: models.predictor.VanillaPredictor
     n_hidden: 512
     n_layers: 2
