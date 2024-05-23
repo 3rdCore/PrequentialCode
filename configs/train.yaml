@@ -14,3 +14,15 @@ logger:
   save_dir: ${save_dir}
   offline: False
   tags: null
+
+
+model:
+  meta_learner:
+    _target_: models.meta_learner.Transforptimizer
+    z_dim: 256
+    n_heads: 4
+    n_hidden: 512
+    n_layers: 8
+    layer_norm_eps: 1e-5
+  prediction_head:
+    _target_: models.prediction_head
