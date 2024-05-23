@@ -19,7 +19,6 @@ logger:
 model:
   meta_learner:
     _target_: models.meta_learner.Transforptimizer
-    z_dim: 256
     n_heads: 4
     n_hidden: 512
     n_layers: 8
