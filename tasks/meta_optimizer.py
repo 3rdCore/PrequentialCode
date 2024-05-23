@@ -9,8 +9,8 @@ from lightning import LightningModule
 from torch import Tensor
 from torch.nn import functional as F
 
-from models.meta_learner.context_aggregator import ContextAggregator
-from models.prediction_head.predictor import Predictor
+from models.context_aggregator import ContextAggregator
+from models.predictor import Predictor
 
 
 class MetaOptimizer(ABC, LightningModule):

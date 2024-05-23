@@ -15,6 +15,12 @@ class Predictor(ABC, nn.Module):
         z_dim: dict[str, int],
         y_dim: dict[str, int],
     ) -> None:
+        """
+        Args:
+            x_dim (dict[str, int]): A dictionary where keys are the names of the different input features and values are their dimensions)
+            z_dim (dict[str, int]): A dictionary where keys are the names of the different input features and values are the dimensions of the latent representation computed by the meta-learner.
+            y_dim (dict[str, int]): A dictionary where keys are the names of the different output features and values are their dimensions.
+        """
         self.x_dim = x_dim
         self.z_dim = z_dim
         self.y_dim = y_dim
@@ -25,7 +31,7 @@ class Predictor(ABC, nn.Module):
 
         Args:
             x (dict[str, Tensor]): Input data, each with shape (samples, tasks, *).
-            z (dict[str, Tensor]): Aggregated context information, each with shape (samples, tasks, *).
+            z (dict[str, Tensor]): Computed latent representation, each with shape (samples, tasks, *).
 
         Returns:
             dict[tuple[str, str], Tensor]: Predicted values for each pair (input_name, output_name), each with shape (samples, tasks, *).
