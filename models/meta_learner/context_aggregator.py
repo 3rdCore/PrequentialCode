@@ -40,7 +40,7 @@ class Transfoptimizer(ContextAggregator):
         layer_norm_eps: float = 1e-5,
         dropout: int = 0.0,
         batch_first: bool = False,
-    ):
+    ) -> None:
         self.x_dim = x_dim
         self.z_dim = z_dim
 
@@ -62,7 +62,7 @@ class Transfoptimizer(ContextAggregator):
         self.init_weights()
 
     @beartype
-    def init_weights(self):
+    def init_weights(self) -> None:
         for name in self.context_encoder:
             for p in self.context_encoder[name].parameters():
                 if p.dim() > 1:  # skip biases
