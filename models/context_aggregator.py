@@ -45,7 +45,8 @@ class Transfoptimizer(ContextAggregator):
         self.x_dim = x_dim
         self.z_dim = z_dim
 
-        self.embedding = nn.Linear(x_dim, h_dim)
+        self.x_embedding = nn.Linear(x_dim, h_dim)
+        self.x0_embedding = nn.Parameter(torch.zeros(1, 1, h_dim))
         self.context_encoder = nn.TransformerEncoder(
             nn.TransformerEncoderLayer(
                 d_model=h_dim,
@@ -72,10 +73,9 @@ class Transfoptimizer(ContextAggregator):
     @beartype
     def forward(self, x: dict[str, Tensor]) -> dict[str, Tensor]:
         x = torch.cat([x[name] for name in x], dim=-1)
-        x = torch.cat(
-            [torch.zeros_like(x[:1, ...]), x], dim=0
-        )  # add a zero tensor to the beginning of the sequence
-        x = self.embedding(x)
+        x = self.x_embedding(x)
+        x0 = self.x0_embedding.expand(x.size(0), 1, -1)
+        x = torch.cat([x0, x], dim=0)
         features = self.context_encoder.forward(x, is_causal=True)
         z = self.projection(features)
         return {"z": z}
