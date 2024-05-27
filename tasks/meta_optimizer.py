@@ -181,3 +181,6 @@ class MetaOptimizer(ABC, LightningModule):
             Tensor: Losses (samples, tasks).
         """
         pass
+
+    def configure_optimizers(self):
+        return torch.optim.Adam(self.parameters(), lr=self.hparams.lr)
