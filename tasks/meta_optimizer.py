@@ -154,8 +154,8 @@ class MetaOptimizer(ABC, LightningModule):
         loss_nexttoken = self.loss_function(x_nexttoken, preds_next_token)
         loss_nexttoken_avg = loss_nexttoken.mean()
         loss = loss_train_avg if self.meta_objective == "train" else loss_nexttoken_avg
-        self.log(f"{mode}/loss_train", loss_train)
-        self.log(f"{mode}/loss_nexttoken", loss_nexttoken)
+        self.log(f"{mode}/loss_train", loss_train_avg)
+        self.log(f"{mode}/loss_nexttoken", loss_nexttoken_avg)
 
         # Within-task validation loss
         loss_val = self.loss_function(
