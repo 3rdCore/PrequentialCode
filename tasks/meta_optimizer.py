@@ -7,7 +7,9 @@ import torch
 from beartype import beartype
 from lightning import LightningModule
 from torch import Tensor
+from torch.nn import MSELoss
 from torch.nn import functional as F
+from torch.nn.modules.loss import _Loss
 
 from models.context_aggregator import ContextAggregator
 from models.predictor import Predictor
@@ -33,9 +35,7 @@ class MetaOptimizer(ABC, LightningModule):
         self.predictor = predictor
 
     @beartype
-    def forward(
-        self, x: dict[str, Tensor]
-    ) -> tuple[
+    def forward(self, x: dict[str, Tensor]) -> tuple[
         dict[str, Tensor],
         dict[str, Tensor],
         dict[str, Tensor],
@@ -170,11 +170,11 @@ class MetaOptimizer(ABC, LightningModule):
         return loss
 
     @abstractmethod
-    def loss_function(self, x: dict[str, Tensor], preds: dict[str, Tensor]) -> Tensor:
+    def loss_function(self, target: dict[str, Tensor], preds: dict[str, Tensor]) -> Tensor:
         """Do not average across samples and tasks! Return shape should be
 
         Args:
-            x (dict[str, Tensor]): Inputs/targets (samples, tasks, *).
+            target (dict[str, Tensor]): Inputs/targets (samples, tasks, *).
             preds (dict[str, Tensor]): Predictions (samples, tasks, *).
 
         Returns:
@@ -184,3 +184,31 @@ class MetaOptimizer(ABC, LightningModule):
 
     def configure_optimizers(self):
         return torch.optim.Adam(self.parameters(), lr=self.hparams.lr)
+
+
+class MetaOptimizerForRegression(MetaOptimizer):
+    def __init__(
+        self,
+        meta_objective: MetaOptimizer.MetaObjective,
+        context_aggregator: ContextAggregator,
+        predictor: Predictor,
+        min_train_samples: int = 1,
+        lr: float = 1e-3,
+        loss_fn: _Loss = MSELoss(reduction="none"),
+    ):
+        super().__init__(meta_objective, context_aggregator, predictor, min_train_samples, lr)
+
+        self.loss_fn = loss_fn
+
+    def loss_function(self, target: dict[str, Tensor], preds: dict[str, Tensor]) -> Tensor:
+        """Computes the Mean Squared Error (MSE) loss for a regression task.
+
+        Args:
+            target (dict[str, Tensor]): Inputs/targets (samples, tasks, *).
+            preds (dict[str, Tensor]): Predictions (samples, tasks, *).
+
+        Returns:
+            Tensor: Losses (samples, tasks).
+        """
+        y_key = self.predictor.y_key
+        return torch.mean(self.loss_fn(preds[y_key], target[y_key]), dim=-1)  # component-wise averaging
