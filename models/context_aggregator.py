@@ -42,6 +42,8 @@ class Transfoptimizer(ContextAggregator):
         layer_norm_eps: float = 1e-5,
         dropout: float = 0.0,
     ) -> None:
+        super().__init__()
+
         self.x_dim = x_dim
         self.z_dim = z_dim
 
