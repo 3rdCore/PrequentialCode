@@ -138,11 +138,11 @@ class MLPPredictor(Predictor):
 
     @beartype
     def forward(self, x: dict[str, Tensor], z: dict[str, Tensor]) -> dict[str, Tensor]:
-        """Predict given inputs x and model parameters z.
+        """Peform a forward pass trought a MLP parameterized by z.
 
         Args:
             x (dict[str, Tensor]): Input data, with shape (samples, tasks, x_dim) at `x_key`.
-            z (dict[str, Tensor]): Aggregated context information, with shape (samples, tasks, (x_dim + 1) * y_dim) at `z_key`.
+            z (dict[str, Tensor]): MLP weights, with shape (samples, tasks, z_dim) at `z_key`.
 
         Returns:
             dict[str, Tensor]: Predicted values for y output, with shape (samples, tasks, y_dim) at `y_key`.
