@@ -199,8 +199,7 @@ class MetaOptimizerForRegression(MetaOptimizer):
         self.loss_fn = loss_fn
 
     def loss_function(self, target: dict[str, Tensor], preds: dict[str, Tensor]) -> Tensor:
-        """Computes the Mean Squared Error (MSE) loss for a regression task.
-
+        """
         Args:
             target (dict[str, Tensor]): Inputs/targets (samples, tasks, *).
             preds (dict[str, Tensor]): Predictions (samples, tasks, *).
