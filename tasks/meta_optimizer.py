@@ -24,8 +24,6 @@ class MetaOptimizer(ABC, LightningModule):
         meta_objective: MetaObjective,
         context_aggregator: ContextAggregator,
         predictor: Predictor,
-        min_train_samples: int = 1,
-        lr: float = 1e-3,
     ):
         super().__init__()
         self.save_hyperparameters(ignore=["context_aggregator", "predictor"])
@@ -35,7 +33,9 @@ class MetaOptimizer(ABC, LightningModule):
         self.predictor = predictor
 
     @beartype
-    def forward(self, x: dict[str, Tensor]) -> tuple[
+    def forward(
+        self, x: dict[str, Tensor]
+    ) -> tuple[
         dict[str, Tensor],
         dict[str, Tensor],
         dict[str, Tensor],
@@ -192,11 +192,9 @@ class MetaOptimizerForRegression(MetaOptimizer):
         meta_objective: MetaOptimizer.MetaObjective,
         context_aggregator: ContextAggregator,
         predictor: Predictor,
-        min_train_samples: int = 1,
-        lr: float = 1e-3,
         loss_fn: _Loss = MSELoss(reduction="none"),
     ):
-        super().__init__(meta_objective, context_aggregator, predictor, min_train_samples, lr)
+        super().__init__(meta_objective, context_aggregator, predictor)
 
         self.loss_fn = loss_fn
 
