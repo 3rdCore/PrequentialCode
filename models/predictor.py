@@ -152,12 +152,14 @@ class MLPPredictor(Predictor):
         z = z[self.z_key]
         x = torch.cat([x, torch.ones_like(x[..., :1])], dim=-1)
 
-        w0_idx = (self.x_dim + 1) * self.h_dim
-        w0 = z[..., :w0_idx].view(*z.shape[:-1], self.x_dim + 1, self.h_dim)
+        w0_size = (self.x_dim + 1) * self.h_dim
+        wi_size = self.h_dim * self.h_dim
+
+        w0 = z[..., :w0_size].view(*z.shape[:-1], self.x_dim + 1, self.h_dim)
         w = [
             z[
                 ...,
-                w0_idx + i * self.h_dim * self.h_dim : w0_idx + (i + 1) * self.h_dim * self.h_dim,
+                w0_size + i * wi_size : w0_size + (i + 1) * wi_size,
             ].view(*z.shape[:-1], self.h_dim, self.h_dim)
             for i in range(0, self.n_layers - 2)
         ]
