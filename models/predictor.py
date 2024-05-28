@@ -9,17 +9,6 @@ from torch.nn import functional as F
 
 
 class Predictor(ABC, nn.Module):
-    def __init__(
-        self,
-        x_keys: tuple[str],
-        z_keys: tuple[str],
-        y_key: str,
-    ) -> None:
-        super().__init__()
-        self.x_keys = x_keys
-        self.z_keys = z_keys
-        self.y_key = y_key
-
     @abstractmethod
     def forward(self, x: dict[str, Tensor], z: dict[str, Tensor]) -> dict[str, Tensor]:
         """Predict different outputs given inputs x and model parameters z.
@@ -47,7 +36,7 @@ class MLPConcatPredictor(Predictor):
         z_keys: tuple[str] = ("z",),
         y_key: str = "y",
     ) -> None:
-        super().__init__(x_keys, z_keys, y_key)
+        super().__init__()
         self.x_dim = x_dim
         self.z_dim = z_dim
         self.y_dim = y_dim
@@ -55,6 +44,9 @@ class MLPConcatPredictor(Predictor):
         self.n_layers = n_layers
         if n_layers < 2:
             raise ValueError("n_layers must be at least 2")
+        self.x_keys = x_keys
+        self.z_keys = z_keys
+        self.y_key = y_key
 
         self.predictor = nn.Sequential(
             nn.Linear(x_dim + self.z_dim, self.h_dim),
