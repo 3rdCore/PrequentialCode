@@ -111,3 +111,60 @@ class LinearPredictor(Predictor):
         z = z.view(*z.shape[:-1], self.x_dim + 1, self.y_dim)
         y = torch.einsum("sbi,sbij->sbj", x, z)
         return {self.y_key: y}
+
+
+class MLPPredictor(Predictor):
+    @beartype
+    def __init__(
+        self,
+        x_dim: int,
+        y_dim: int,
+        h_dim: int,
+        n_layers: int,
+        x_key: str = "x",
+        z_key: str = "z",
+        y_key: str = "y",
+    ) -> None:
+        z_dim = (x_dim + 1) * h_dim + (n_layers - 2) * h_dim * h_dim + h_dim * y_dim
+        super().__init__(z_dim)
+        self.x_dim = x_dim
+        self.y_dim = y_dim
+        self.x_key = x_key
+        self.z_key = z_key
+        self.y_key = y_key
+
+        self.n_layers = n_layers
+        self.h_dim = h_dim
+
+    @beartype
+    def forward(self, x: dict[str, Tensor], z: dict[str, Tensor]) -> dict[str, Tensor]:
+        """Predict given inputs x and model parameters z.
+
+        Args:
+            x (dict[str, Tensor]): Input data, with shape (samples, tasks, x_dim) at `x_key`.
+            z (dict[str, Tensor]): Aggregated context information, with shape (samples, tasks, (x_dim + 1) * y_dim) at `z_key`.
+
+        Returns:
+            dict[str, Tensor]: Predicted values for y output, with shape (samples, tasks, y_dim) at `y_key`.
+        """
+
+        x = x[self.x_key]
+        z = z[self.z_key]
+        x = torch.cat([x, torch.ones_like(x[..., :1])], dim=-1)
+
+        w0_idx = (self.x_dim + 1) * self.h_dim
+        w0 = z[..., :w0_idx].view(*z.shape[:-1], self.x_dim + 1, self.h_dim)
+        w = [
+            z[
+                ...,
+                w0_idx + i * self.h_dim * self.h_dim : w0_idx + (i + 1) * self.h_dim * self.h_dim,
+            ].view(*z.shape[:-1], self.h_dim, self.h_dim)
+            for i in range(0, self.n_layers - 2)
+        ]
+        w_last = z[..., -self.h_dim * self.y_dim :].view(*z.shape[:-1], self.h_dim, self.y_dim)
+
+        y = F.relu(torch.einsum("sbi,sbij->sbj", x, w0))
+        for i in range(0, self.n_layers - 2):
+            y = F.relu(torch.einsum("sbi,sbij->sbj", y, w[i]))
+        y = torch.einsum("sbi,sbij->sbj", y, w_last)
+        return {self.y_key: y}
