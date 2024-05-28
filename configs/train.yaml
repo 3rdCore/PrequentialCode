@@ -16,7 +16,7 @@ logger:
   offline: False
   tags: null
 
-transfoptimizer:
+meta_learner:
   _target_: models.context_aggregator.Transfoptimizer
   z_dim: ${defaults.z_dim}
   h_dim: 512
@@ -26,7 +26,7 @@ transfoptimizer:
   layer_norm_eps: 1e-5
   dropout: 0.0
 
-vanilla_predictor:
+predictor:
   _target_: models.predictor.MLPConcatPredictor
   h_dim: 512
   z_dim: ${defaults.z_dim}

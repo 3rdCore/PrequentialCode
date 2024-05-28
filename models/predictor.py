@@ -9,6 +9,10 @@ from torch.nn import functional as F
 
 
 class Predictor(ABC, nn.Module):
+    def __init__(self, z_dim: int | None):
+        super().__init__()
+        self.z_dim = z_dim
+
     @abstractmethod
     def forward(self, x: dict[str, Tensor], z: dict[str, Tensor]) -> dict[str, Tensor]:
         """Predict different outputs given inputs x and model parameters z.
@@ -36,7 +40,7 @@ class MLPConcatPredictor(Predictor):
         z_keys: tuple[str] = ("z",),
         y_key: str = "y",
     ) -> None:
-        super().__init__()
+        super().__init__(z_dim)
         self.x_dim = x_dim
         self.z_dim = z_dim
         self.y_dim = y_dim
@@ -82,9 +86,9 @@ class LinearPredictor(Predictor):
         z_key: str = "z",
         y_key: str = "y",
     ) -> None:
-        super().__init__()
+        z_dim = (x_dim + 1) * y_dim
+        super().__init__(z_dim)
         self.x_dim = x_dim
-        self.z_dim = (x_dim + 1) * y_dim
         self.y_dim = y_dim
         self.x_key = x_key
         self.z_key = z_key

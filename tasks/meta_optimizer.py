@@ -30,12 +30,17 @@ class MetaOptimizer(ABC, LightningModule):
         super().__init__()
         self.save_hyperparameters(ignore=["context_aggregator", "predictor"])
 
+        if predictor.z_dim and context_aggregator.z_shape != predictor.z_dim:
+            raise ValueError("ContextAggregator and Predictor I/O dimensions do not match.")
+
         self.meta_objective = meta_objective
         self.context_aggregator = context_aggregator
         self.predictor = predictor
 
     @beartype
-    def forward(self, x: dict[str, Tensor]) -> tuple[
+    def forward(
+        self, x: dict[str, Tensor]
+    ) -> tuple[
         dict[str, Tensor],
         dict[str, Tensor],
         dict[str, Tensor],
