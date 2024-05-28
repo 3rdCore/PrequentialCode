@@ -7,3 +7,4 @@ wandb
 omegaconf
 hydra-core
 beartype
+submitit
