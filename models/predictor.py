@@ -3,9 +3,9 @@ from abc import ABC, abstractmethod
 import torch
 from beartype import beartype
 from torch import Tensor, nn
-
-# import torch MLP
 from torch.nn import functional as F
+
+from models.utils import FastFoodUpsample
 
 
 class Predictor(ABC, nn.Module):
@@ -47,7 +47,7 @@ class MLPConcatPredictor(Predictor):
         self.h_dim = h_dim
         self.n_layers = n_layers
         if n_layers < 2:
-            raise ValueError("n_layers must be at least 2")
+            raise ValueError("n_layers must be at least 3")
         self.x_keys = x_keys
         self.z_keys = z_keys
         self.y_key = y_key
@@ -138,7 +138,7 @@ class MLPPredictor(Predictor):
 
     @beartype
     def forward(self, x: dict[str, Tensor], z: dict[str, Tensor]) -> dict[str, Tensor]:
-        """Peform a forward pass trought a MLP parameterized by z.
+        """Peform a forward pass through a MLP parameterized by z.
 
         Args:
             x (dict[str, Tensor]): Input data, with shape (samples, tasks, x_dim) at `x_key`.
@@ -170,3 +170,72 @@ class MLPPredictor(Predictor):
             y = F.relu(torch.einsum("sbi,sbij->sbj", y, w[i]))
         y = torch.einsum("sbi,sbij->sbj", y, w_last)
         return {self.y_key: y}
+
+
+class MLPLowRankPredictor(Predictor):
+    @beartype
+    def __init__(
+        self,
+        x_dim: int,
+        z_dim: int,
+        y_dim: int,
+        h_dim: int,
+        n_layers: int,
+        x_key: str = "x",
+        z_key: str = "z",
+        y_key: str = "y",
+    ) -> None:
+        super().__init__(z_dim)
+        self.x_dim = x_dim
+        self.y_dim = y_dim
+        self.x_key = x_key
+        self.z_key = z_key
+        self.y_key = y_key
+
+        if n_layers < 2:
+            raise ValueError("n_layers must be at least 3")
+        self.n_layers = n_layers
+        self.h_dim = h_dim
+
+        self.params_0 = nn.ModuleList(
+            [nn.Linear(x_dim, h_dim)]
+            + [nn.Linear(h_dim, h_dim) for _ in range(n_layers - 2)]
+            + [nn.Linear(h_dim, y_dim)]
+        )
+        param_dims = [(h_dim, x_dim), (h_dim,)]
+        for _ in range(n_layers - 2):
+            param_dims += [(h_dim, h_dim), (h_dim,)]
+        param_dims += [(y_dim, h_dim), (y_dim,)]
+        self.ff_upsample = FastFoodUpsample(z_dim, param_dims)
+
+    @beartype
+    def forward(self, x: dict[str, Tensor], z: dict[str, Tensor]) -> dict[str, Tensor]:
+        """Peform a forward pass through an MLP modulated in a low-rank way by z.
+
+        Args:
+            x (dict[str, Tensor]): Input data, with shape (samples, tasks, x_dim) at `x_key`.
+            z (dict[str, Tensor]): MLP weights, with shape (samples, tasks, z_dim) at `z_key`.
+
+        Returns:
+            dict[str, Tensor]: Predicted values for y output, with shape (samples, tasks, y_dim) at `y_key`.
+        """
+        x = x[self.x_key]
+        z = z[self.z_key]
+
+        seq, batch, _ = z.shape
+        z = z.view(seq * batch, -1)
+        z = self.ff_upsample(z)
+
+        for i in range(self.n_layers):
+            w0 = self.params_0[i].weight
+            b0 = self.params_0[i].bias
+            wd = z[2 * i].view(seq, batch, *w0.shape)
+            bd = z[2 * i + 1].view(seq, batch, *b0.shape)
+            w = w0.unsqueeze(0).unsqueeze(0) + wd
+            b = b0.unsqueeze(0).unsqueeze(0) + bd
+            x = torch.einsum("sbi,sbji->sbj", x, w)
+            x = x + b
+            if i < self.n_layers - 1:
+                x = F.relu(x)
+
+        return {self.y_key: x}
