@@ -2,6 +2,7 @@ defaults:
   - _self_
   - hydra: default
   - experiment: null
+  - z_dim: 512 # Dimension of the latent space
 
 save_dir: "logs/"
 seed: 27
@@ -17,12 +18,16 @@ logger:
 
 transfoptimizer:
   _target_: models.context_aggregator.Transfoptimizer
-  n_heads: 4
-  n_hidden: 512
+  z_dim: ${defaults.z_dim}
+  h_dim: 512
   n_layers: 8
+  n_heads: 4
+  mlp_dim: 512
   layer_norm_eps: 1e-5
+  dropout: 0.0
 
 vanilla_predictor:
-  _target_: models.predictor.VanillaPredictor
-  n_hidden: 512
+  _target_: models.predictor.MLPConcatPredictor
+  h_dim: 512
+  z_dim: ${defaults.z_dim}
   n_layers: 2
