@@ -15,7 +15,7 @@ class Predictor(ABC, nn.Module):
 
     @abstractmethod
     def forward(self, x: dict[str, Tensor], z: dict[str, Tensor]) -> dict[str, Tensor]:
-        """Predict different outputs given inputs x and model parameters z.
+        """Predict different outputs given inputs x and latent representation z.
 
         Args:
             x (dict[str, Tensor]): Input data, each with shape (samples, tasks, *).
@@ -125,7 +125,7 @@ class MLPPredictor(Predictor):
         z_key: str = "z",
         y_key: str = "y",
     ) -> None:
-        z_dim = (x_dim + 1) * h_dim + (n_layers - 2) * h_dim * h_dim + h_dim * y_dim
+        z_dim = (x_dim + 1) * h_dim + (n_layers - 2) * (h_dim + 1) * h_dim + (h_dim + 1) * y_dim
         super().__init__(z_dim)
         self.x_dim = x_dim
         self.y_dim = y_dim
@@ -138,37 +138,51 @@ class MLPPredictor(Predictor):
 
     @beartype
     def forward(self, x: dict[str, Tensor], z: dict[str, Tensor]) -> dict[str, Tensor]:
-        """Peform a forward pass through a MLP parameterized by z.
-
-        Args:
-            x (dict[str, Tensor]): Input data, with shape (samples, tasks, x_dim) at `x_key`.
-            z (dict[str, Tensor]): MLP weights, with shape (samples, tasks, z_dim) at `z_key`.
-
-        Returns:
-            dict[str, Tensor]: Predicted values for y output, with shape (samples, tasks, y_dim) at `y_key`.
-        """
-
         x = x[self.x_key]
         z = z[self.z_key]
-        x = torch.cat([x, torch.ones_like(x[..., :1])], dim=-1)
 
-        w0_size = (self.x_dim + 1) * self.h_dim
-        wi_size = self.h_dim * self.h_dim
+        w0_size = (self.x_dim) * self.h_dim
+        wi_size = (self.h_dim) * self.h_dim
 
-        w0 = z[..., :w0_size].view(*z.shape[:-1], self.x_dim + 1, self.h_dim)
+        w0 = z[..., :w0_size].view(*z.shape[:-1], self.x_dim, self.h_dim)
+        b0 = z[..., w0_size : w0_size + self.h_dim].view(*z.shape[:-1], self.h_dim)
+
         w = [
             z[
                 ...,
-                w0_size + i * wi_size : w0_size + (i + 1) * wi_size,
+                w0_size
+                + self.h_dim
+                + i * (wi_size + self.h_dim) : w0_size
+                + self.h_dim
+                + i * (wi_size + self.h_dim)
+                + wi_size,
             ].view(*z.shape[:-1], self.h_dim, self.h_dim)
             for i in range(0, self.n_layers - 2)
         ]
-        w_last = z[..., -self.h_dim * self.y_dim :].view(*z.shape[:-1], self.h_dim, self.y_dim)
+        b = [
+            z[
+                ...,
+                w0_size
+                + self.h_dim
+                + i * (wi_size + self.h_dim)
+                + wi_size : w0_size
+                + self.h_dim
+                + i * (wi_size + self.h_dim)
+                + wi_size
+                + self.h_dim,
+            ].view(*z.shape[:-1], self.h_dim)
+            for i in range(0, self.n_layers - 2)
+        ]
 
-        y = F.relu(torch.einsum("sbi,sbij->sbj", x, w0))
+        w_last_size = self.h_dim * self.y_dim
+        w_last = z[..., -(w_last_size + self.y_dim) : -self.y_dim].view(*z.shape[:-1], self.h_dim, self.y_dim)
+        b_last = z[..., -self.y_dim :].view(*z.shape[:-1], self.y_dim)
+
+        y = F.relu(torch.einsum("sbi,sbij->sbj", x, w0) + b0)
         for i in range(0, self.n_layers - 2):
-            y = F.relu(torch.einsum("sbi,sbij->sbj", y, w[i]))
-        y = torch.einsum("sbi,sbij->sbj", y, w_last)
+            y = F.relu(torch.einsum("sbi,sbij->sbj", y, w[i]) + b[i])
+        y = torch.einsum("sbi,sbij->sbj", y, w_last) + b_last
+
         return {self.y_key: y}
 
 
