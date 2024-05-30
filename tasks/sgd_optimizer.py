@@ -29,11 +29,13 @@ class StandardOptimizerForRegression(LightningModule):
         lr: float = 1e-3,
         y_key: str = "y",
         loss_fn: _Loss = MSELoss(),
+        batch_size: int = 8,
     ):
         super().__init__()
         self.save_hyperparameters(ignore=["model", "optimizer", "loss_fn"])
         self.model = model
         self.optimizer = optimizer
+        self.loss_fn = loss_fn
 
     @beartype
     def forward(
@@ -55,7 +57,6 @@ class StandardOptimizerForRegression(LightningModule):
         ]  # TODO remove hardcoded name
 
         x_train = {name: x[name][train_indices] for name in x}
-        # preds zero like x_train
         preds_train = torch.zeros_like(x_train[self.hparams.y_key])
         x_nexttoken = {name: x[name][self.hparams.min_train_samples - 1 :] for name in x}
         preds_next_token = torch.zeros_like(x_nexttoken[self.hparams.y_key])
@@ -73,7 +74,6 @@ class StandardOptimizerForRegression(LightningModule):
             for b in range(x.size(1))
         ]
 
-        torch.cuda.synchronize(device)
         losses = []
 
         for i, model in enumerate(models):
@@ -82,16 +82,19 @@ class StandardOptimizerForRegression(LightningModule):
 
             inputs = x[: self.hparams.min_train_samples + seq_idx, task_idx, ...]  # (:seq_idx, task_idx, *)
             targets = y[: self.hparams.min_train_samples + seq_idx, task_idx, ...]  # (:seq_idx, task_idx, *)
+
+            dataset = TensorDataset(inputs, targets)
+            dataloader = DataLoader(dataset, batch_size=self.hparams.batch_size, shuffle=True)
+
             for epoch in range(self.hparams.epochs):  # Number of epochs
-                for sample in range(inputs.shape[0]):
-                    input = inputs[sample]
-                    target = targets[sample]
+                for batch in dataloader:  # using a dataloader and random shuffle
+                    input, target = batch
                     # Zero the gradients
                     self.optimizer.zero_grad()
 
                     # Forward pass
                     preds = model(input)
-                    loss = self.hparams.loss_fn(preds, target)
+                    loss = self.loss_fn(preds, target)
 
                     # Backward pass
                     loss.backward()
@@ -181,5 +184,5 @@ class StandardOptimizerForRegression(LightningModule):
             Tensor: Losses (samples, tasks).
         """
         return torch.mean(
-            self.hparams.loss_fn(preds[self.hparams.y_key], target[self.hparams.y_key]), dim=-1
+            self.loss_fn(preds[self.hparams.y_key], target[self.hparams.y_key]), dim=-1
         )  # component-wise averaging
