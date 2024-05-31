@@ -9,9 +9,8 @@ from models.utils import FastFoodUpsample
 
 
 class Predictor(ABC, nn.Module):
-    def __init__(self, z_dim: int | None):
+    def __init__(self):
         super().__init__()
-        self.z_dim = z_dim
 
     @abstractmethod
     def forward(self, x: dict[str, Tensor], z: dict[str, Tensor]) -> dict[str, Tensor]:
@@ -40,7 +39,7 @@ class MLPConcatPredictor(Predictor):
         z_keys: tuple[str] = ("z",),
         y_key: str = "y",
     ) -> None:
-        super().__init__(z_dim)
+        super().__init__()
         self.x_dim = x_dim
         self.z_dim = z_dim
         self.y_dim = y_dim
@@ -86,13 +85,13 @@ class LinearPredictor(Predictor):
         z_key: str = "z",
         y_key: str = "y",
     ) -> None:
-        z_dim = (x_dim + 1) * y_dim
-        super().__init__(z_dim)
+        super().__init__()
         self.x_dim = x_dim
         self.y_dim = y_dim
         self.x_key = x_key
         self.z_key = z_key
         self.y_key = y_key
+        self.z_dim = (x_dim + 1) * y_dim
 
     @beartype
     def forward(self, x: dict[str, Tensor], z: dict[str, Tensor]) -> dict[str, Tensor]:
@@ -125,13 +124,13 @@ class MLPPredictor(Predictor):
         z_key: str = "z",
         y_key: str = "y",
     ) -> None:
-        z_dim = (x_dim + 1) * h_dim + (n_layers - 2) * (h_dim + 1) * h_dim + (h_dim + 1) * y_dim
-        super().__init__(z_dim)
+        super().__init__()
         self.x_dim = x_dim
         self.y_dim = y_dim
         self.x_key = x_key
         self.z_key = z_key
         self.y_key = y_key
+        self.z_dim = (x_dim + 1) * h_dim + (n_layers - 2) * (h_dim + 1) * h_dim + (h_dim + 1) * y_dim
 
         self.n_layers = n_layers
         self.h_dim = h_dim
@@ -199,8 +198,9 @@ class MLPLowRankPredictor(Predictor):
         z_key: str = "z",
         y_key: str = "y",
     ) -> None:
-        super().__init__(z_dim)
+        super().__init__()
         self.x_dim = x_dim
+        self.z_dim = z_dim
         self.y_dim = y_dim
         self.x_key = x_key
         self.z_key = z_key

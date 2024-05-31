@@ -2,7 +2,6 @@ import random
 from abc import ABC, abstractmethod
 from typing import Iterable, Literal
 
-import numpy as np
 import torch
 from beartype import beartype
 from lightning import LightningModule
@@ -25,13 +24,10 @@ class MetaOptimizer(ABC, LightningModule):
         context_aggregator: ContextAggregator,
         predictor: Predictor,
         min_train_samples: int = 1,
-        lr: float = 1e-3,
+        lr: float = 1e-4,
     ):
         super().__init__()
         self.save_hyperparameters(ignore=["context_aggregator", "predictor"])
-
-        if predictor.z_dim and context_aggregator.z_shape != predictor.z_dim:
-            raise ValueError("ContextAggregator and Predictor I/O dimensions do not match.")
 
         self.meta_objective = meta_objective
         self.context_aggregator = context_aggregator
@@ -68,7 +64,13 @@ class MetaOptimizer(ABC, LightningModule):
         z_train = {name: z[name][1:] for name in z}
         z_nexttoken = {name: z[name][:-1] for name in z}
 
-        train_indices = [random.randint(0, i) for i in range(self.hparams.min_train_samples - 1, len(x))]
+        train_indices = [
+            random.randint(0, i)
+            for i in range(
+                self.hparams.min_train_samples - 1,
+                len(x[list(x.keys())[0]]),
+            )
+        ]
         x_train = {name: x[name][train_indices] for name in x}
         x_nexttoken = {name: x[name][self.hparams.min_train_samples - 1 :] for name in x}
 
@@ -92,14 +94,10 @@ class MetaOptimizer(ABC, LightningModule):
     @beartype
     def training_step(self, data, batch_idx):
         x, task_params = data
-        if task_params is not None:
-            task_params = {
-                name: task_params[name][self.hparams.min_train_samples - 1 :] for name in task_params
-            }
-        preds_train, preds_next_token, x_train, x_nexttoken, z_train, z_nexttoken = self.forward(x)
+        preds_train, preds_nexttoken, x_train, x_nexttoken, z_train, z_nexttoken = self.forward(x)
         loss = self.losses_and_metrics(
             preds_train,
-            preds_next_token,
+            preds_nexttoken,
             x_train,
             x_nexttoken,
             z_train,
@@ -111,14 +109,10 @@ class MetaOptimizer(ABC, LightningModule):
     @beartype
     def validation_step(self, data, batch_idx):
         x, task_params = data
-        if task_params is not None:
-            task_params = {
-                name: task_params[name][self.hparams.min_train_samples - 1 :] for name in task_params
-            }
-        preds_train, preds_next_token, x_train, x_nexttoken, z_train, z_nexttoken = self.forward(x)
+        preds_train, preds_nexttoken, x_train, x_nexttoken, z_train, z_nexttoken = self.forward(x)
         _ = self.losses_and_metrics(
             preds_train,
-            preds_next_token,
+            preds_nexttoken,
             x_train,
             x_nexttoken,
             z_train,
@@ -130,7 +124,7 @@ class MetaOptimizer(ABC, LightningModule):
     def losses_and_metrics(
         self,
         preds_train: dict[str, Tensor],
-        preds_next_token: dict[str, Tensor],
+        preds_nexttoken: dict[str, Tensor],
         x_train: dict[str, Tensor],
         x_nexttoken: dict[str, Tensor],
         z_train,
@@ -141,7 +135,7 @@ class MetaOptimizer(ABC, LightningModule):
 
         Args:
             preds_train (dict[str, Tensor]): Training set predictions (samples, tasks, *).
-            preds_next_token (dict[str, Tensor]): Next-token predictions (samples, tasks, *).
+            preds_nexttoken (dict[str, Tensor]): Next-token predictions (samples, tasks, *).
             x_train (dict[str, Tensor]): Inputs/targets for training set predictions (samples, tasks, *).
             x_nexttoken (dict[str, Tensor]): Inputs/targets for next-token predictions (samples, tasks, *).
             z_train (dict[str, Tensor]): Aggregated context for training set predictions (samples, tasks, *).
@@ -151,22 +145,20 @@ class MetaOptimizer(ABC, LightningModule):
         Returns:
             torch.Tensor: Scalar loss to optimize.
         """
-        mode = "val_tasks" if self.trainer.validating else "train_tasks"
+        mode = "train_tasks" if self.training else "val_tasks"
 
         # Main losses
         loss_train = self.loss_function(x_train, preds_train)
         loss_train_avg = loss_train.mean()
-        loss_nexttoken = self.loss_function(x_nexttoken, preds_next_token)
+        loss_nexttoken = self.loss_function(x_nexttoken, preds_nexttoken)
         loss_nexttoken_avg = loss_nexttoken.mean()
         loss = loss_train_avg if self.meta_objective == "train" else loss_nexttoken_avg
         self.log(f"{mode}/loss_train", loss_train_avg)
         self.log(f"{mode}/loss_nexttoken", loss_nexttoken_avg)
 
         # Within-task validation loss
-        loss_val = self.loss_function(
-            {name: x_nexttoken[name][1:] for name in x_nexttoken},
-            {name: preds_next_token[name][1:] for name in preds_next_token},
-        )  # Index starting from 1 because train-risk model's first z never gets a training signal
+        # (from index 1 because the train-risk optimizer's first z never gets a training signal)
+        loss_val = loss_nexttoken[1:]
         loss_val_avg = loss_val.mean()
         self.log(f"{mode}/loss_val", loss_val_avg)
 
@@ -214,5 +206,6 @@ class MetaOptimizerForRegression(MetaOptimizer):
         Returns:
             Tensor: Losses (samples, tasks).
         """
-        y_key = self.predictor.y_key
+        assert len(preds) == 1, "Only one output key supported for regression tasks"
+        y_key = list(preds.keys())[0]
         return torch.mean(self.loss_fn(preds[y_key], target[y_key]), dim=-1)  # component-wise averaging

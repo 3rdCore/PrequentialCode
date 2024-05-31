@@ -79,5 +79,7 @@ def custom_collate_fn(batch):
     else:
         for key in batch_params[0].keys():
             stacked = [item[key] for item in batch_params]
+            if isinstance(stacked[0], Tensor):
+                stacked = torch.stack(stacked, dim=0)
             batch_dict_params[key] = stacked
     return batch_dict_x, batch_dict_params

@@ -38,6 +38,7 @@ class Transfoptimizer(ContextAggregator):
         h_dim: int,
         n_layers: int,
         n_heads: int,
+        x_keys: tuple[str] = ("x",),
         mlp_dim: int | None = None,
         layer_norm_eps: float = 1e-5,
         dropout: float = 0.0,
@@ -46,6 +47,7 @@ class Transfoptimizer(ContextAggregator):
 
         self.x_dim = x_dim
         self.z_dim = z_dim
+        self.x_keys = x_keys
 
         self.x_embedding = nn.Linear(x_dim, h_dim)
         self.x0_embedding = nn.Parameter(torch.zeros(1, 1, h_dim))
@@ -74,11 +76,12 @@ class Transfoptimizer(ContextAggregator):
 
     @beartype
     def forward(self, x: dict[str, Tensor]) -> dict[str, Tensor]:
-        x = torch.cat([x[name] for name in x], dim=-1)
+        x = torch.cat([x[name] for name in self.x_keys], dim=-1)
         x = self.x_embedding(x)
-        x0 = self.x0_embedding.expand(x.size(0), 1, -1)
+        x0 = self.x0_embedding.expand(1, x.shape[1], -1)
         x = torch.cat([x0, x], dim=0)
-        features = self.context_encoder.forward(x, is_causal=True)
+        causal_mask = torch.nn.Transformer.generate_square_subsequent_mask(x.shape[0])
+        features = self.context_encoder.forward(x, mask=causal_mask, is_causal=True)
         z = self.projection(features)
         return {"z": z}
 
