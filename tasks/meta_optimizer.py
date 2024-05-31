@@ -2,7 +2,6 @@ import random
 from abc import ABC, abstractmethod
 from typing import Iterable, Literal
 
-import pandas as pd
 import torch
 from beartype import beartype
 from lightning import LightningModule
@@ -10,7 +9,6 @@ from torch import Tensor
 from torch.nn import MSELoss
 from torch.nn import functional as F
 from torch.nn.modules.loss import _Loss
-from torchmetrics import MeanMetric
 
 from models.context_aggregator import ContextAggregator
 from models.predictor import Predictor
@@ -27,7 +25,6 @@ class MetaOptimizer(ABC, LightningModule):
         predictor: Predictor,
         min_train_samples: int = 1,
         lr: float = 1e-4,
-        expensive_log_freq: int = 10,
     ):
         super().__init__()
         self.save_hyperparameters(ignore=["context_aggregator", "predictor"])
@@ -35,13 +32,6 @@ class MetaOptimizer(ABC, LightningModule):
         self.meta_objective = meta_objective
         self.context_aggregator = context_aggregator
         self.predictor = predictor
-
-        self.loss_vs_n_samples = {
-            "train_tasks/loss_train": [],
-            "train_tasks/loss_nexttoken": [],
-            "val_tasks/loss_train": [],
-            "val_tasks/loss_nexttoken": [],
-        }
 
     @beartype
     def forward(
@@ -130,6 +120,57 @@ class MetaOptimizer(ABC, LightningModule):
             task_params,
         )
 
+    @torch.inference_mode()
+    def on_train_end(self):
+        if self.logger is None:
+            return
+        dataloader_train = self.trainer.datamodule.train_dataloader()
+        dataloader_val = self.trainer.datamodule.val_dataloader()
+        for dl, mode in [
+            (dataloader_train, "train_tasks"),
+            (dataloader_val, "val_tasks"),
+        ]:
+            num_tasks = len(dl.dataset)
+            n_sample_loss_train, n_sample_loss_nexttoken = None, None
+            for x, _ in dl:
+                x = {name: x[name].to(self.device) for name in x}
+                (
+                    preds_train,
+                    preds_nexttoken,
+                    x_train,
+                    x_nexttoken,
+                    _,
+                    _,
+                ) = self.forward(x)
+                loss_train = self.loss_function(x_train, preds_train)
+                loss_nexttoken = self.loss_function(x_nexttoken, preds_nexttoken)
+
+                # Because "train" optimizer's first z never gets a training signal,
+                # and "prequential" optimizer's last z never gets a training signal
+                loss_train, loss_nexttoken = loss_train[:-1], loss_nexttoken[1:]
+                loss_train, loss_nexttoken = (
+                    loss_train.sum(dim=-1) / num_tasks,
+                    loss_nexttoken.sum(dim=-1) / num_tasks,
+                )
+
+                if n_sample_loss_train is None:
+                    n_sample_loss_train = loss_train
+                    n_sample_loss_nexttoken = loss_nexttoken
+                n_sample_loss_train += loss_train
+                n_sample_loss_nexttoken += loss_nexttoken
+
+            for i in range(len(n_sample_loss_train)):
+                n_samples = i + self.hparams.min_train_samples
+                l_train_i = n_sample_loss_train[i].cpu()
+                l_nexttoken_i = n_sample_loss_nexttoken[i].cpu()
+                self.logger.experiment.log(
+                    {
+                        "n_samples": n_samples,
+                        f"{mode}/n_sample_loss_train": l_train_i,
+                        f"{mode}/n_sample_loss_nexttoken": l_nexttoken_i,
+                    }
+                )
+
     @beartype
     def losses_and_metrics(
         self,
@@ -156,69 +197,16 @@ class MetaOptimizer(ABC, LightningModule):
             torch.Tensor: Scalar loss to optimize.
         """
         mode = "train_tasks" if self.training else "val_tasks"
+        num_tasks = preds_train[list(preds_train.keys())[0]].shape[1]
 
         # Main losses
-        loss_train = self.loss_function(x_train, preds_train)
-        loss_train_avg = loss_train.mean()
-        loss_nexttoken = self.loss_function(x_nexttoken, preds_nexttoken)
-        loss_nexttoken_avg = loss_nexttoken.mean()
-        loss = loss_train_avg if self.meta_objective == "train" else loss_nexttoken_avg
-        self.log(
-            f"{mode}/loss_train",
-            loss_train_avg,
-            batch_size=loss_train.shape[1],
-        )
-        self.log(
-            f"{mode}/loss_nexttoken",
-            loss_nexttoken_avg,
-            batch_size=loss_nexttoken.shape[1],
-        )
-
-        # Losses as a function of n_training samples
-        if self.trainer.current_epoch % self.hparams.expensive_log_freq == 0:
-            # Because "train" optimizer's first z never gets a training signal,
-            # and "prequential" optimizer's last z never gets a training signal
-            loss_train, loss_nexttoken = loss_train[:-1], loss_nexttoken[1:]
-            n_tasks = loss_train.shape[1]
-            loss_train, loss_nexttoken = (
-                loss_train.mean(dim=-1),
-                loss_nexttoken.mean(dim=-1),
-            )
-            metrics = [
-                self.loss_vs_n_samples[f"{mode}/loss_train"],
-                self.loss_vs_n_samples[f"{mode}/loss_nexttoken"],
-            ]
-            for l, m in zip([loss_train, loss_nexttoken], metrics):
-                for i in range(len(l)):
-                    if len(m) <= i:
-                        m.append(MeanMetric())
-                    m[i].update(value=l[i].detach().cpu(), weight=n_tasks)
+        loss_train = self.loss_function(x_train, preds_train).mean()
+        loss_nexttoken = self.loss_function(x_nexttoken, preds_nexttoken).mean()
+        loss = loss_train if self.meta_objective == "train" else loss_nexttoken
+        self.log(f"{mode}/loss_train", loss_train, batch_size=num_tasks)
+        self.log(f"{mode}/loss_nexttoken", loss_nexttoken, batch_size=num_tasks)
 
         return loss
-
-    def on_train_epoch_end(self) -> None:
-        if self.trainer.current_epoch % self.hparams.expensive_log_freq != 0 or self.logger is None:
-            return
-
-        for mode in ["train_tasks", "val_tasks"]:
-            for metric in ["loss_train", "loss_nexttoken"]:
-                loss_vs_n_sampes = [m.compute() for m in self.loss_vs_n_samples[f"{mode}/{metric}"]]
-                df = pd.DataFrame(
-                    {
-                        "loss": loss_vs_n_sampes,
-                        "n_samples": range(
-                            self.hparams.min_train_samples,
-                            len(loss_vs_n_sampes) + self.hparams.min_train_samples,
-                        ),
-                    }
-                )
-                self.logger.log_table(
-                    f"{mode}/{metric}-vs-n_train_samples",
-                    dataframe=df,
-                    step=self.trainer.current_epoch,
-                )
-                for m in self.loss_vs_n_samples[f"{mode}/{metric}"]:
-                    m.reset()
 
     @abstractmethod
     def loss_function(self, target: dict[str, Tensor], preds: dict[str, Tensor]) -> Tensor:
