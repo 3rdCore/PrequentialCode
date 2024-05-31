@@ -2,6 +2,7 @@ import random
 from abc import ABC, abstractmethod
 from typing import Iterable, Literal
 
+import pandas as pd
 import torch
 from beartype import beartype
 from lightning import LightningModule
@@ -9,6 +10,7 @@ from torch import Tensor
 from torch.nn import MSELoss
 from torch.nn import functional as F
 from torch.nn.modules.loss import _Loss
+from torchmetrics import MeanMetric
 
 from models.context_aggregator import ContextAggregator
 from models.predictor import Predictor
@@ -25,6 +27,7 @@ class MetaOptimizer(ABC, LightningModule):
         predictor: Predictor,
         min_train_samples: int = 1,
         lr: float = 1e-4,
+        expensive_log_freq: int = 10,
     ):
         super().__init__()
         self.save_hyperparameters(ignore=["context_aggregator", "predictor"])
@@ -32,6 +35,13 @@ class MetaOptimizer(ABC, LightningModule):
         self.meta_objective = meta_objective
         self.context_aggregator = context_aggregator
         self.predictor = predictor
+
+        self.loss_vs_n_samples = {
+            "train_tasks/loss_train": [],
+            "train_tasks/loss_nexttoken": [],
+            "val_tasks/loss_train": [],
+            "val_tasks/loss_nexttoken": [],
+        }
 
     @beartype
     def forward(
@@ -153,18 +163,62 @@ class MetaOptimizer(ABC, LightningModule):
         loss_nexttoken = self.loss_function(x_nexttoken, preds_nexttoken)
         loss_nexttoken_avg = loss_nexttoken.mean()
         loss = loss_train_avg if self.meta_objective == "train" else loss_nexttoken_avg
-        self.log(f"{mode}/loss_train", loss_train_avg)
-        self.log(f"{mode}/loss_nexttoken", loss_nexttoken_avg)
+        self.log(
+            f"{mode}/loss_train",
+            loss_train_avg,
+            batch_size=loss_train.shape[1],
+        )
+        self.log(
+            f"{mode}/loss_nexttoken",
+            loss_nexttoken_avg,
+            batch_size=loss_nexttoken.shape[1],
+        )
 
-        # Within-task validation loss
-        # (from index 1 because the train-risk optimizer's first z never gets a training signal)
-        loss_val = loss_nexttoken[1:]
-        loss_val_avg = loss_val.mean()
-        self.log(f"{mode}/loss_val", loss_val_avg)
-
-        # TODO: Plot the train, next-token, and validation losses as a function of the number of samples seen. Ideally this should be computed over the whole epoch and we should build something like a line-plot with number of samples on the x-axis, loss on the y-axis, and noise bands for standard deviation across the tasks. The plot can have a scroller to show it at different points during meta-optimizer training. We can use wandb line plots for this. Note: we should probably not create and log such a plot every epoch, as the number of samples would be quite large. We can do something like every N epochs.
+        # Losses as a function of n_training samples
+        if self.trainer.current_epoch % self.hparams.expensive_log_freq == 0:
+            # Because "train" optimizer's first z never gets a training signal,
+            # and "prequential" optimizer's last z never gets a training signal
+            loss_train, loss_nexttoken = loss_train[:-1], loss_nexttoken[1:]
+            n_tasks = loss_train.shape[1]
+            loss_train, loss_nexttoken = (
+                loss_train.mean(dim=-1),
+                loss_nexttoken.mean(dim=-1),
+            )
+            metrics = [
+                self.loss_vs_n_samples[f"{mode}/loss_train"],
+                self.loss_vs_n_samples[f"{mode}/loss_nexttoken"],
+            ]
+            for l, m in zip([loss_train, loss_nexttoken], metrics):
+                for i in range(len(l)):
+                    if len(m) <= i:
+                        m.append(MeanMetric())
+                    m[i].update(value=l[i].detach().cpu(), weight=n_tasks)
 
         return loss
+
+    def on_train_epoch_end(self) -> None:
+        if self.trainer.current_epoch % self.hparams.expensive_log_freq != 0 or self.logger is None:
+            return
+
+        for mode in ["train_tasks", "val_tasks"]:
+            for metric in ["loss_train", "loss_nexttoken"]:
+                loss_vs_n_sampes = [m.compute() for m in self.loss_vs_n_samples[f"{mode}/{metric}"]]
+                df = pd.DataFrame(
+                    {
+                        "loss": loss_vs_n_sampes,
+                        "n_samples": range(
+                            self.hparams.min_train_samples,
+                            len(loss_vs_n_sampes) + self.hparams.min_train_samples,
+                        ),
+                    }
+                )
+                self.logger.log_table(
+                    f"{mode}/{metric}-vs-n_train_samples",
+                    dataframe=df,
+                    step=self.trainer.current_epoch,
+                )
+                for m in self.loss_vs_n_samples[f"{mode}/{metric}"]:
+                    m.reset()
 
     @abstractmethod
     def loss_function(self, target: dict[str, Tensor], preds: dict[str, Tensor]) -> Tensor:

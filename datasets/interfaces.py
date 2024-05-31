@@ -1,3 +1,4 @@
+import warnings
 from abc import ABC, abstractmethod
 from typing import Any
 
@@ -7,6 +8,8 @@ from lightning import LightningDataModule
 from torch import Tensor
 from torch.utils.data import DataLoader
 from torchdata.datapipes.map import MapDataPipe
+
+warnings.filterwarnings("ignore", message=".*does not have many workers.*")
 
 
 class TaskDistDataset(ABC, MapDataPipe):

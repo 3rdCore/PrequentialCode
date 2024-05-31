@@ -60,6 +60,7 @@ class Transfoptimizer(ContextAggregator):
                 layer_norm_eps=layer_norm_eps,
             ),
             num_layers=n_layers,
+            enable_nested_tensor=False,
         )
         if z_dim != h_dim:
             self.projection = nn.Linear(h_dim, z_dim)
