@@ -38,7 +38,7 @@ class Transfoptimizer(ContextAggregator):
         h_dim: int,
         n_layers: int,
         n_heads: int,
-        x_keys: tuple[str] = ("x",),
+        x_keys: tuple[str] = ("x", "y"),
         mlp_dim: int | None = None,
         layer_norm_eps: float = 1e-5,
         dropout: float = 0.0,

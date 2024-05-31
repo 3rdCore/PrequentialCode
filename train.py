@@ -2,6 +2,8 @@ import hydra
 from lightning import Trainer, seed_everything
 from omegaconf import OmegaConf
 
+from utils import ast_eval
+
 
 @hydra.main(config_path="./configs/", config_name="train", version_base=None)
 def train(cfg):
