@@ -29,7 +29,7 @@ dataset:
     y_dim: 1
     n_tasks: 10000
     n_samples: 50
-    noise: 0.0
+    noise: 0.05
     data_dist: "normal"
     shuffle_samples: True
   val_dataset:
@@ -38,11 +38,11 @@ dataset:
     y_dim: ${experiment.dataset.train_dataset.y_dim}
     n_tasks: 1000
     n_samples: ${experiment.dataset.train_dataset.n_samples}
-    noise: 0.0
+    noise: ${experiment.dataset.train_dataset.noise}
     data_dist: ${experiment.dataset.train_dataset.data_dist}
     shuffle_samples: ${experiment.dataset.train_dataset.shuffle_samples}
 
 trainer:
-  max_epochs: 1000
+  max_epochs: 50
 
 callbacks:
