@@ -30,6 +30,10 @@ dataset:
     n_tasks: 10000
     n_samples: 50
     noise: 0.0
+    has_ood: True
+    ood_style: "bimodal"
+    ood_shift: 2.0
+    ood_scale: 3.0
     data_dist: "normal"
     shuffle_samples: True
     activation: "relu"
@@ -42,6 +46,10 @@ dataset:
     n_tasks: 1000
     n_samples: ${experiment.dataset.train_dataset.n_samples}
     noise: ${experiment.dataset.train_dataset.noise}
+    has_ood: ${experiment.dataset.train_dataset.has_ood}
+    ood_style: ${experiment.dataset.train_dataset.ood_style}
+    ood_shift: ${experiment.dataset.train_dataset.ood_shift}
+    ood_scale: ${experiment.dataset.train_dataset.ood_scale}
     data_dist: ${experiment.dataset.train_dataset.data_dist}
     shuffle_samples: ${experiment.dataset.train_dataset.shuffle_samples}
     activation: ${experiment.dataset.train_dataset.activation}

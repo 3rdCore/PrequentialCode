@@ -1,6 +1,6 @@
 import copy
 from abc import abstractmethod
-from typing import Any, Iterable, List
+from typing import Any, Iterable, List, Literal
 
 import numpy as np
 import torch
@@ -29,15 +29,41 @@ class RegressionDataset(SyntheticDataset):
         n_tasks: int,
         n_samples: int,
         noise: float = 0.0,
+        has_ood: bool = False,
+        ood_style: Literal["shift_scale", "bimodal"] = "shift_scale",
+        ood_shift: float | None = 2.0,
+        ood_scale: float | None = 3.0,
         data_dist: str = "normal",
         shuffle_samples: bool = True,
     ):
         self.x_dim = x_dim
         self.y_dim = y_dim
         self.noise = noise
+        self.has_ood = has_ood
+        self.ood_style = ood_style
+        self.ood_shift = ood_shift
+        self.ood_scale = ood_scale
         self.data_dist = data_dist
 
+        if ood_style == "shift_scale" and (ood_shift is None or self.ood_scale is None):
+            raise ValueError("ood_shift and ood_scale must be provided for ood_style='shift_scale'")
+
         super().__init__(n_tasks=n_tasks, n_samples=n_samples, shuffle_samples=shuffle_samples)
+
+    @beartype
+    def gen_ood_data(self, x: Tensor, task_dict_params: dict[str, Tensor]):
+        x_mean = torch.mean(x, dim=-2, keepdim=True)  # mean across samples
+
+        if self.ood_style == "shift_scale":
+            x_ood = x_mean + self.ood_shift + (x - x_mean) * self.ood_scale
+        elif self.ood_style == "bimodal":
+            x_min = x.min(dim=-2, keepdim=True).values
+            x_max = x.max(dim=-2, keepdim=True).values
+            x_ood = torch.where(x < x_mean, x_min + x_mean - x, x_max + x_mean - x)
+
+        y_ood = self.function(x_ood, task_dict_params)
+
+        return {"x_ood": x_ood, "y_ood": y_ood}
 
     @beartype
     @torch.inference_mode()
@@ -47,10 +73,15 @@ class RegressionDataset(SyntheticDataset):
         n_samples: int,
     ) -> tuple[dict[str, Tensor], dict[str, Iterable]]:
         x = self.sample_x(n_tasks, n_samples)
+
         task_dict_params = self.sample_task_params(self.n_tasks)
         y = self.function(x, task_dict_params)
         y += self.noise * torch.randn_like(y)
         data_dict = {"x": x, "y": y}
+
+        if self.has_ood:  # create ood data
+            ood_dict = self.gen_ood_data(x, task_dict_params)
+            data_dict.update(ood_dict)
 
         return data_dict, task_dict_params
 
@@ -63,14 +94,29 @@ class RegressionDataset(SyntheticDataset):
         return x
 
     @abstractmethod
-    def sample_task_params(self, n: int | None = None) -> dict[str, Tensor]:
+    def sample_task_params(self, n_tasks: int | None = None) -> dict[str, Tensor]:
+        """Sample parameters for each of the n_tasks
+
+        Args:
+            n_tasks (int): Number of tasks to generate.
+
+        Returns:
+            dict[str, Tensor]:
+        """
         pass
 
     @abstractmethod
     def function(self, x: Tensor, params: dict[str, Tensor]) -> FloatTensor:
-        # x: (bsz, n_samples, x_dim)
-        # params: (bsz, ...) parameters of the function
-        # returns y: (bsz, n_samples, y_dim)
+        """Applies the function defined using the params (function parameters)
+        on the x(input data) to get y (output)
+
+        Args:
+            x (Tensor): input data with shape (n_tasks, n_samples, x_dim)
+            params (int): function parameters with shape (n_tasks, ...)
+
+        Returns:
+            FloatTensor: y (output) with shape (n_tasks, n_samples, y_dim)
+        """
         pass
 
 
@@ -83,6 +129,10 @@ class LinearRegression(RegressionDataset):
         n_tasks: int,
         n_samples: int,
         noise: float = 0.0,
+        has_ood: bool = False,
+        ood_style: str = "shift_scale",
+        ood_shift: float | None = 2.0,
+        ood_scale: float | None = 3.0,
         data_dist: str = "normal",
         shuffle_samples: bool = True,
     ):
@@ -92,21 +142,25 @@ class LinearRegression(RegressionDataset):
             n_tasks=n_tasks,
             n_samples=n_samples,
             noise=noise,
+            has_ood=has_ood,
+            ood_style=ood_style,
+            ood_shift=ood_shift,
+            ood_scale=ood_scale,
             data_dist=data_dist,
             shuffle_samples=shuffle_samples,
         )
 
     @beartype
-    def sample_task_params(self, n: int | None = None) -> dict[str, Tensor]:
+    def sample_task_params(self, n_tasks: int | None = None) -> dict[str, Tensor]:
         # Linear regression weights
-        n = n if n is not None else self.n_tasks
-        w = torch.randn(n, self.x_dim + 1, self.y_dim) / (self.x_dim + 1) ** 0.5
+        n_tasks = n_tasks if n_tasks is not None else self.n_tasks
+        w = torch.randn(n_tasks, self.x_dim + 1, self.y_dim) / (self.x_dim + 1) ** 0.5
         return {"w": w}
 
     @beartype
     def function(self, x: Tensor, task_params: dict[str, Tensor]) -> FloatTensor:
-        # x: (bsz, n_samples, x_dim)
-        # w: (bsz, x_dim + 1, y_dim)
+        # x: (n_tasks, n_samples, x_dim)
+        # w: (n_tasks, x_dim + 1, y_dim)
         w = task_params["w"]
         x = torch.cat([x, torch.ones_like(x[:, :, :1])], dim=-1)
         y = torch.bmm(x, w)
@@ -122,6 +176,10 @@ class SinusoidRegression(RegressionDataset):
         n_tasks: int,
         n_samples: int,
         noise: float = 0.0,
+        has_ood: bool = False,
+        ood_style: str = "shift_scale",
+        ood_shift: float | None = 2.0,
+        ood_scale: float | None = 3.0,
         data_dist: str = "normal",
         shuffle_samples: bool = True,
         n_freq: int = 3,
@@ -140,27 +198,31 @@ class SinusoidRegression(RegressionDataset):
             n_tasks=n_tasks,
             n_samples=n_samples,
             noise=noise,
+            has_ood=has_ood,
+            ood_style=ood_style,
+            ood_shift=ood_shift,
+            ood_scale=ood_scale,
             data_dist=data_dist,
             shuffle_samples=shuffle_samples,
         )
 
     @beartype
-    def sample_task_params(self, n: int | None = None) -> dict[str, Tensor]:
+    def sample_task_params(self, n_tasks: int | None = None) -> dict[str, Tensor]:
         # Linear regression weights
-        n = n if n is not None else self.n_samples
-        amplitudes = torch.rand(n, self.x_dim, self.n_freq)
+        n_tasks = n_tasks if n_tasks is not None else self.n_tasks
+        amplitudes = torch.rand(n_tasks, self.x_dim, self.n_freq)
         if self.fixed_freq:
             freq = self.freqs
             w = amplitudes
         else:
-            freq = torch.rand(n, self.x_dim, self.n_freq) * 5
+            freq = torch.rand(n_tasks, self.x_dim, self.n_freq) * 5
             w = torch.cat([amplitudes, freq], dim=-1)
         return {"w": w}
 
     @beartype
     def function(self, x: Tensor, task_params: dict[str, Tensor]) -> FloatTensor:
-        # x: (bsz, n_samples, x_dim)
-        # w: (bsz, x_dim, 2 * n_freq)
+        # x: (n_tasks, n_samples, x_dim)
+        # w: (n_tasks, x_dim, 2 * n_freq)
         w = task_params["w"]
         if self.fixed_freq:
             amplitudes = w
@@ -181,6 +243,10 @@ class MLPRegression(RegressionDataset):
         n_tasks: int,
         n_samples: int,
         noise: float = 0.0,
+        has_ood: bool = False,
+        ood_style: str = "shift_scale",
+        ood_shift: float | None = 2.0,
+        ood_scale: float | None = 3.0,
         data_dist: str = "normal",
         activation: str = "relu",
         n_layers: int = 2,
@@ -218,18 +284,23 @@ class MLPRegression(RegressionDataset):
             n_tasks=n_tasks,
             n_samples=n_samples,
             noise=noise,
+            has_ood=has_ood,
+            ood_style=ood_style,
+            ood_shift=ood_shift,
+            ood_scale=ood_scale,
             data_dist=data_dist,
             shuffle_samples=shuffle_samples,
         )
 
-    def sample_task_params(self, n: int | None = None) -> dict[str, Tensor]:
+    def sample_task_params(self, n_tasks: int | None = None) -> dict[str, Tensor]:
         # Linear regression weights
-        models = [copy.deepcopy(self.model).apply(init_weights) for _ in range(n)]
+        n_tasks = n_tasks if n_tasks is not None else self.n_tasks
+        models = [copy.deepcopy(self.model).apply(init_weights) for _ in range(n_tasks)]
         return {"w": models}
 
     @torch.inference_mode()
     def function(self, x: Tensor, task_params: dict[str, Tensor]) -> FloatTensor:
-        # x: (bsz, n_samples, x_dim)
+        # x: (n_tasks, n_samples, x_dim)
         ys = [task_params["w"][idx](x[idx].to(self.device)) for idx in range(x.shape[0])]
         return torch.stack(ys)
 
@@ -244,6 +315,10 @@ class MLPLowRankRegression(RegressionDataset):
         n_tasks: int,
         n_samples: int,
         noise: float = 0.0,
+        has_ood: bool = False,
+        ood_style: str = "shift_scale",
+        ood_shift: float | None = 2.0,
+        ood_scale: float | None = 3.0,
         data_dist: str = "normal",
         activation: str = "relu",
         n_layers: int = 2,
@@ -285,19 +360,23 @@ class MLPLowRankRegression(RegressionDataset):
             n_tasks=n_tasks,
             n_samples=n_samples,
             noise=noise,
+            has_ood=has_ood,
+            ood_style=ood_style,
+            ood_shift=ood_shift,
+            ood_scale=ood_scale,
             data_dist=data_dist,
             shuffle_samples=shuffle_samples,
         )
 
-    def sample_task_params(self, n: int | None = None) -> dict[str, Tensor]:
+    def sample_task_params(self, n_tasks: int | None = None) -> dict[str, Tensor]:
         # Linear regression weights
-        z = torch.randn(n, self.z_dim)
+        z = torch.randn(n_tasks, self.z_dim)
         return {"z": z}
 
     @torch.inference_mode()
     def function(self, x: Tensor, task_params: dict[str, Tensor]) -> FloatTensor:
-        # x: (bsz, n_samples, x_dim)
-        # z: (bsz, z_dim)
+        # x: (n_tasks, n_samples, x_dim)
+        # z: (n_tasks, z_dim)
         x = x.to(self.device)
         z = task_params["z"].to(self.device)
         z = self.ff_upsample(z)
