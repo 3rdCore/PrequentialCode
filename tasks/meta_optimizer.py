@@ -283,8 +283,8 @@ class MetaOptimizerForRegression(MetaOptimizer):
         n_context_points: tuple[int] = (1, 4, 10, 50),
         resolution: int = 100,
     ) -> None:
-        # if self.logger is None:
-        #     return
+        if self.logger is None:
+            return
 
         # Get the dataset
         if mode == "train_tasks":
