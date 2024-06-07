@@ -7,7 +7,7 @@ save_dir: "logs/"
 seed: 27
 
 logger:
-  _target_: pytorch_lightning.loggers.WandbLogger
+  _target_: lightning.pytorch.loggers.WandbLogger
   entity: "dhanya-shridar"
   project: "Prequential-ICL"
   name: ${now:%Y-%m-%d}_${now:%H-%M-%S}

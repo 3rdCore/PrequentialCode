@@ -1,5 +1,7 @@
 pre-commit
 numpy
+matplotlib
+seaborn
 torch
 lightning
 torchdata
