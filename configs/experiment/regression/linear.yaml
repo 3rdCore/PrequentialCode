@@ -19,6 +19,7 @@ task:
     y_dim: ${experiment.dataset.train_dataset.y_dim}
     h_dim: 256
     n_layers: 5
+  probe_n_context_points: [2, 5]
 
 dataset:
   _target_: datasets.interfaces.ICLDataModule
