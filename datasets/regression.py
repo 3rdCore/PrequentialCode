@@ -40,6 +40,7 @@ class RegressionDataset(SyntheticDataset):
         super().__init__(n_tasks=n_tasks, n_samples=n_samples, shuffle_samples=shuffle_samples)
 
     @beartype
+    @torch.inference_mode()
     def gen_data(
         self,
         n_tasks: int,
