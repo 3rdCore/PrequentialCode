@@ -271,18 +271,10 @@ class MLPLowRankRegression(RegressionDataset):
         param_dims += [(y_dim, hidden_dim), (y_dim,)]
         self.ff_upsample = FastFoodUpsample(z_dim, param_dims)
 
-        layers = [
-            nn.Linear(x_dim, self.hidden_dim),
-            self.activation,
-        ]
-        for _ in range(self.n_layers - 1):
-            layers.append(nn.Linear(self.hidden_dim, self.hidden_dim))
-            layers.append(self.activation)
-        layers.append(nn.Linear(self.hidden_dim, y_dim))
-        self.model = torch.nn.Sequential(*layers)
         if torch.cuda.is_available():
             self.device = torch.device("cuda")
-            self.to(self.device)
+            self.params_0 = self.params_0.to(self.device)
+            self.ff_upsample = self.ff_upsample.to(self.device)
         else:
             self.device = torch.device("cpu")
 
