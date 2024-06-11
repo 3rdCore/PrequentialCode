@@ -1,4 +1,4 @@
-name: "linear_regression"
+name: "mlp_regression"
 
 task:
   _target_: tasks.meta_optimizer.MetaOptimizerForRegression
