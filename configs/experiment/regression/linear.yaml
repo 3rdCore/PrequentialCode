@@ -30,7 +30,7 @@ dataset:
     y_dim: 1
     n_tasks: 10000
     n_samples: 50
-    noise: 0.05
+    noise: 0.0
     data_dist: "normal"
     shuffle_samples: True
   val_dataset:
