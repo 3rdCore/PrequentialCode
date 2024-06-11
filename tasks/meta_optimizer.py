@@ -341,10 +341,10 @@ class MetaOptimizerForRegression(MetaOptimizer):
 
         # Reshape and indexing things for easier downstream manipulation
         x = x[0, :, 0].numpy()  # (resolution,)
-        y = y.squeeze(-1).numpy()  # (n_probe_tasks, resolution)
-        x_context = context["x"].squeeze(-1).to("cpu").numpy()  # (n_samples, n_probe_tasks)
-        y_context = context["y"].squeeze(-1).to("cpu").numpy()  # (n_samples, n_probe_tasks)
-        y_pred = y_pred.to("cpu").numpy()  # (resolution, len(n_context_points), n_probe_tasks)
+        y = y.squeeze(-1).cpu().numpy()  # (n_probe_tasks, resolution)
+        x_context = context["x"].squeeze(-1).cpu().numpy()  # (n_samples, n_probe_tasks)
+        y_context = context["y"].squeeze(-1).cpu().numpy()  # (n_samples, n_probe_tasks)
+        y_pred = y_pred.cpu().numpy()  # (resolution, len(n_context_points), n_probe_tasks)
 
         # Collect data in tables
         df_context = []

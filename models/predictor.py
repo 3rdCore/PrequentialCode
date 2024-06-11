@@ -207,7 +207,7 @@ class MLPLowRankPredictor(Predictor):
         self.y_key = y_key
 
         if n_layers < 2:
-            raise ValueError("n_layers must be at least 3")
+            raise ValueError("n_layers must be at least 2")
         self.n_layers = n_layers
         self.h_dim = h_dim
 
