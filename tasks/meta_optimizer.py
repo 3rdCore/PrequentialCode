@@ -102,7 +102,7 @@ class MetaOptimizer(ABC, LightningModule):
     def training_step(self, data, batch_idx):
         x, task_params = data
         preds_train, preds_nexttoken, x_train, x_nexttoken, z_train, z_nexttoken = self.forward(x)
-        loss, _ = self.losses_and_metrics(
+        loss = self.losses_and_metrics(
             preds_train,
             preds_nexttoken,
             x_train,
@@ -280,19 +280,14 @@ class MetaOptimizerForRegression(MetaOptimizer):
         )
         mode = "train_tasks" if self.training else "val_tasks"
         num_tasks = preds_train[list(preds_train.keys())[0]].shape[1]
-        names = ["x", "y"]
-        x_ood = {name: x_nexttoken[f"{name}_ood"].to(self.device) for name in names}
+        x_ood = {name: x_nexttoken[f"{name}_ood"].to(self.device) for name in ["x", "y"]}
+        z = {name: z_nexttoken[name][1:] for name in z_nexttoken}
         with torch.inference_mode():
-            preds_train_ood = self.predictor.forward(x_ood, z_train)
-            preds_nexttoken_ood = self.predictor.forward(x_ood, z_nexttoken)
+            preds_ood = self.predictor.forward(x_ood, z)
 
-        # OOD losses
-        loss_train_ood = self.loss_function(x_ood, preds_train_ood).mean()
-        loss_nexttoken_ood = self.loss_function(x_ood, preds_nexttoken_ood).mean()
-        ood_loss = loss_train_ood if self.meta_objective == "train" else loss_nexttoken_ood
-
+        ood_loss = self.loss_function(x_ood, preds_ood).mean()
         self.log(f"{mode}/loss_ood", ood_loss, batch_size=num_tasks)
-        return loss, ood_loss
+        return loss
 
     def on_train_end(self):
         super().on_train_end()
