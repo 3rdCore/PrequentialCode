@@ -56,8 +56,7 @@ class MetaOptimizerForRegression(MetaOptimizer):
         preds_nexttoken: dict[str, Tensor],
         x_train: dict[str, Tensor],
         x_nexttoken: dict[str, Tensor],
-        z_train,
-        z_nexttoken: dict[str, Tensor],
+        z: dict[str, Tensor],
         task_params: dict[str, Iterable] | None,
     ) -> Tensor:
         loss = super().losses_and_metrics(
@@ -65,16 +64,13 @@ class MetaOptimizerForRegression(MetaOptimizer):
             preds_nexttoken,
             x_train,
             x_nexttoken,
-            z_train,
-            z_nexttoken,
+            z,
             task_params,
         )
         mode = "train_tasks" if self.training else "val_tasks"
         num_tasks = preds_train[list(preds_train.keys())[0]].shape[1]
 
-        # We shift by 1 because the first z_nexttoken never gets a training signal for "train" optimizer
-        z = {name: z_nexttoken[name][1:] for name in z_nexttoken}
-        x_ood = {name: x_nexttoken[f"{name}_ood"].to(self.device)[1:] for name in ["x", "y"]}
+        x_ood = {name: x_nexttoken[f"{name}_ood"].to(self.device) for name in ["x", "y"]}
         with torch.inference_mode():
             preds_ood = self.predictor.forward(x_ood, z)
         ood_loss = self.loss_function(x_ood, preds_ood).mean()

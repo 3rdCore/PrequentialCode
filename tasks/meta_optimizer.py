@@ -39,7 +39,6 @@ class MetaOptimizer(ABC, LightningModule):
         dict[str, Tensor],
         dict[str, Tensor],
         dict[str, Tensor],
-        dict[str, Tensor],
     ]:
         """Return the training predictions, next-token predictions, and aggregated context z.
 
@@ -48,57 +47,58 @@ class MetaOptimizer(ABC, LightningModule):
 
         Returns:
             tuple[dict[str, Tensor], dict[str, Tensor]]: Training predictions, next-token predictions, and aggregated context z.
-            - training predictions: (samples - min_train_samples + 1, tasks, *).
-            - next-token predictions: (samples - min_train_samples + 1, tasks, *).
-            - x_train: (samples - min_train_samples + 1, tasks, *).
-            - x_nexttoken: (samples - min_train_samples + 1, tasks, *).
-            - z_train: (samples - min_train_samples + 1, tasks, *).
-            - z_nexttoken: (samples - min_train_samples + 1, tasks, *).
+            - training predictions: (samples - min_train_samples, tasks, *).
+            - next-token predictions: (samples - min_train_samples, tasks, *).
+            - x_train: (samples - min_train_samples, tasks, *).
+            - x_nexttoken: (samples - min_train_samples, tasks, *).
+            - z: (samples - min_train_samples, tasks, *).
         """
         z = self.context_aggregator.forward(x)
-        z = {name: z[name][self.hparams.min_train_samples - 1 :] for name in z}
 
-        z_train = {name: z[name][1:] for name in z}
-        z_nexttoken = {name: z[name][:-1] for name in z}
+        # z goes from 0 context to full context.
+        # We index this way because for the "prequential" optimizer the final z never gets a training signal,
+        # and for the "train" optimizer the first z never gets a training signal.
+        z = {name: z[name][self.hparams.min_train_samples : -1] for name in z}
 
+        # x_train is some random location previously in the context,
+        # and x_nexttoken is the next token.
         train_indices = [
             random.randint(0, i)
             for i in range(
                 self.hparams.min_train_samples - 1,
-                len(x[list(x.keys())[0]]),
+                len(x[list(x.keys())[0]]) - 1,
             )
         ]
         x_train = {name: x[name][train_indices] for name in x}
-        x_nexttoken = {name: x[name][self.hparams.min_train_samples - 1 :] for name in x}
+        x_nexttoken = {name: x[name][self.hparams.min_train_samples :] for name in x}
 
         mode = self.training
         if self.meta_objective == "train":
-            preds_train = self.predictor.forward(x_train, z_train)
+            preds_train = self.predictor.forward(x_train, z)
             self.train(False)
             with torch.inference_mode():
-                preds_nexttoken = self.predictor.forward(x_nexttoken, z_nexttoken)
+                preds_nexttoken = self.predictor.forward(x_nexttoken, z)
         elif self.meta_objective == "prequential":
-            preds_nexttoken = self.predictor.forward(x_nexttoken, z_nexttoken)
+            preds_nexttoken = self.predictor.forward(x_nexttoken, z)
             self.train(False)
             with torch.inference_mode():
-                preds_train = self.predictor.forward(x_train, z_train)
+                preds_train = self.predictor.forward(x_train, z)
         else:
             raise ValueError(f"Invalid meta_objective: {self.meta_objective}")
         self.train(mode)
 
-        return preds_train, preds_nexttoken, x_train, x_nexttoken, z_train, z_nexttoken
+        return preds_train, preds_nexttoken, x_train, x_nexttoken, z
 
     @beartype
     def training_step(self, data, batch_idx):
         x, task_params = data
-        preds_train, preds_nexttoken, x_train, x_nexttoken, z_train, z_nexttoken = self.forward(x)
+        preds_train, preds_nexttoken, x_train, x_nexttoken, z = self.forward(x)
         loss = self.losses_and_metrics(
             preds_train,
             preds_nexttoken,
             x_train,
             x_nexttoken,
-            z_train,
-            z_nexttoken,
+            z,
             task_params,
         )
         return loss
@@ -106,67 +106,69 @@ class MetaOptimizer(ABC, LightningModule):
     @beartype
     def validation_step(self, data, batch_idx):
         x, task_params = data
-        preds_train, preds_nexttoken, x_train, x_nexttoken, z_train, z_nexttoken = self.forward(x)
+        preds_train, preds_nexttoken, x_train, x_nexttoken, z = self.forward(x)
         _ = self.losses_and_metrics(
             preds_train,
             preds_nexttoken,
             x_train,
             x_nexttoken,
-            z_train,
-            z_nexttoken,
+            z,
             task_params,
         )
 
     @torch.inference_mode()
     def on_train_end(self):
+        self.log_loss_vs_nsamples(mode="train_tasks")
+        self.log_loss_vs_nsamples(mode="val_tasks")
+
+    @torch.inference_mode()
+    def log_loss_vs_nsamples(self, mode: Literal["train_tasks", "val_tasks"]):
         if self.logger is None:
             return
-        dataloader_train = self.trainer.datamodule.train_dataloader()
-        dataloader_val = self.trainer.datamodule.val_dataloader()
-        for dl, mode in [
-            (dataloader_train, "train_tasks"),
-            (dataloader_val, "val_tasks"),
-        ]:
-            num_tasks = len(dl.dataset)
-            n_sample_loss_train, n_sample_loss_nexttoken = None, None
-            for x, _ in dl:
-                x = {name: x[name].to(self.device) for name in x}
-                (
-                    preds_train,
-                    preds_nexttoken,
-                    x_train,
-                    x_nexttoken,
-                    _,
-                    _,
-                ) = self.forward(x)
-                loss_train = self.loss_function(x_train, preds_train)
-                loss_nexttoken = self.loss_function(x_nexttoken, preds_nexttoken)
 
-                # Because "train" optimizer's first z never gets a training signal,
-                # and "prequential" optimizer's last z never gets a training signal
-                loss_train, loss_nexttoken = loss_train[:-1], loss_nexttoken[1:]
-                loss_train, loss_nexttoken = (
-                    loss_train.sum(dim=-1) / num_tasks,
-                    loss_nexttoken.sum(dim=-1) / num_tasks,
-                )
+        # Get the dataloader
+        if mode == "train_tasks":
+            dl = self.trainer.datamodule.train_dataloader()
+        else:
+            dl = self.trainer.datamodule.val_dataloader()
 
-                if n_sample_loss_train is None:
-                    n_sample_loss_train = loss_train
-                    n_sample_loss_nexttoken = loss_nexttoken
+        num_tasks = len(dl.dataset)
+        n_sample_loss_train, n_sample_loss_nexttoken = None, None
+        for x, _ in dl:
+            x = {name: x[name].to(self.device) for name in x}
+            (
+                preds_train,
+                preds_nexttoken,
+                x_train,
+                x_nexttoken,
+                _,
+            ) = self.forward(x)
+            loss_train = self.loss_function(x_train, preds_train)
+            loss_nexttoken = self.loss_function(x_nexttoken, preds_nexttoken)
+
+            loss_train, loss_nexttoken = (
+                loss_train.sum(dim=-1) / num_tasks,
+                loss_nexttoken.sum(dim=-1) / num_tasks,
+            )
+
+            if n_sample_loss_train is None:
+                n_sample_loss_train = loss_train
+                n_sample_loss_nexttoken = loss_nexttoken
+            else:
                 n_sample_loss_train += loss_train
                 n_sample_loss_nexttoken += loss_nexttoken
 
-            for i in range(len(n_sample_loss_train)):
-                n_samples = i + self.hparams.min_train_samples
-                l_train_i = n_sample_loss_train[i].cpu()
-                l_nexttoken_i = n_sample_loss_nexttoken[i].cpu()
-                self.logger.experiment.log(
-                    {
-                        "n_samples": n_samples,
-                        f"{mode}/n_sample_loss_train": l_train_i,
-                        f"{mode}/n_sample_loss_nexttoken": l_nexttoken_i,
-                    }
-                )
+        for i in range(len(n_sample_loss_train)):
+            n_samples = i + self.hparams.min_train_samples
+            l_train_i = n_sample_loss_train[i].cpu()
+            l_nexttoken_i = n_sample_loss_nexttoken[i].cpu()
+            self.logger.experiment.log(
+                {
+                    "n_samples": n_samples,
+                    f"{mode}/n_sample_loss_train": l_train_i,
+                    f"{mode}/n_sample_loss_nexttoken": l_nexttoken_i,
+                }
+            )
 
     @beartype
     def losses_and_metrics(
@@ -175,8 +177,7 @@ class MetaOptimizer(ABC, LightningModule):
         preds_nexttoken: dict[str, Tensor],
         x_train: dict[str, Tensor],
         x_nexttoken: dict[str, Tensor],
-        z_train: dict[str, Tensor],
-        z_nexttoken: dict[str, Tensor],
+        z: dict[str, Tensor],
         task_params: dict[str, Iterable] | None,
     ) -> torch.Tensor:
         """Computes and logs losses and other metrics. Can be subclassed to add more metrics, or modify loss (e.g., adding a task_params prediction loss).
