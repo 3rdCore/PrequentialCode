@@ -102,7 +102,7 @@ class MetaOptimizer(ABC, LightningModule):
     def training_step(self, data, batch_idx):
         x, task_params = data
         preds_train, preds_nexttoken, x_train, x_nexttoken, z_train, z_nexttoken = self.forward(x)
-        loss = self.losses_and_metrics(
+        loss, _ = self.losses_and_metrics(
             preds_train,
             preds_nexttoken,
             x_train,
@@ -185,7 +185,7 @@ class MetaOptimizer(ABC, LightningModule):
         preds_nexttoken: dict[str, Tensor],
         x_train: dict[str, Tensor],
         x_nexttoken: dict[str, Tensor],
-        z_train,
+        z_train: dict[str, Tensor],
         z_nexttoken: dict[str, Tensor],
         task_params: dict[str, Iterable] | None,
     ) -> torch.Tensor:
@@ -264,6 +264,35 @@ class MetaOptimizerForRegression(MetaOptimizer):
         assert len(preds) == 1, "Only one output key supported for regression tasks"
         y_key = list(preds.keys())[0]
         return torch.mean(self.loss_fn(preds[y_key], target[y_key]), dim=-1)  # component-wise averaging
+
+    def losses_and_metrics(
+        self,
+        preds_train: dict[str, Tensor],
+        preds_nexttoken: dict[str, Tensor],
+        x_train: dict[str, Tensor],
+        x_nexttoken: dict[str, Tensor],
+        z_train,
+        z_nexttoken: dict[str, Tensor],
+        task_params: dict[str, Iterable] | None,
+    ) -> Tensor:
+        loss = super().losses_and_metrics(
+            preds_train, preds_nexttoken, x_train, x_nexttoken, z_train, z_nexttoken, task_params
+        )
+        mode = "train_tasks" if self.training else "val_tasks"
+        num_tasks = preds_train[list(preds_train.keys())[0]].shape[1]
+        names = ["x", "y"]
+        x_ood = {name: x_nexttoken[f"{name}_ood"].to(self.device) for name in names}
+        with torch.inference_mode():
+            preds_train_ood = self.predictor.forward(x_ood, z_train)
+            preds_nexttoken_ood = self.predictor.forward(x_ood, z_nexttoken)
+
+        # OOD losses
+        loss_train_ood = self.loss_function(x_ood, preds_train_ood).mean()
+        loss_nexttoken_ood = self.loss_function(x_ood, preds_nexttoken_ood).mean()
+        ood_loss = loss_train_ood if self.meta_objective == "train" else loss_nexttoken_ood
+
+        self.log(f"{mode}/loss_ood", ood_loss, batch_size=num_tasks)
+        return loss, ood_loss
 
     def on_train_end(self):
         super().on_train_end()

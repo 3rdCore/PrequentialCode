@@ -18,12 +18,7 @@ def train(cfg):
     if logger:
         logger.experiment.config.update({"name": cfg.experiment.name})
 
-    trainer = Trainer(
-        logger=logger,
-        callbacks=callbacks,
-        enable_checkpointing=False,
-        **cfg.experiment.trainer,
-    )
+    trainer = Trainer(logger=logger, callbacks=callbacks, enable_checkpointing=True, **cfg.experiment.trainer)
     trainer.fit(model=task, datamodule=dataset)
 
 
