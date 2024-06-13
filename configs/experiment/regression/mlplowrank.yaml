@@ -1,7 +1,7 @@
 name: "mlplowrank_regression"
 
 task:
-  _target_: tasks.meta_optimizer.MetaOptimizerForRegression
+  _target_: tasks.meta_optimizer_regression.MetaOptimizerForRegression
   meta_objective: prequential
   min_train_samples: 1
   lr: 1e-4
