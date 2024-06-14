@@ -22,14 +22,13 @@ class StandardOptimizerForRegression(LightningModule):
     @beartype
     def __init__(
         self,
-        epochs: int,
+        inner_epochs: int,
         model: Module,
         optimizer: Optimizer,
         min_train_samples: int = 1,
-        lr: float = 1e-3,
         y_key: str = "y",
         loss_fn: _Loss = MSELoss(),
-        batch_size: int = 8,
+        inner_batch_size: int = 8,
     ):
         super().__init__()
         self.save_hyperparameters(ignore=["model", "optimizer", "loss_fn"])
@@ -41,15 +40,7 @@ class StandardOptimizerForRegression(LightningModule):
     def forward(
         self, x: dict[str, Tensor]
     ) -> tuple[dict[str, Tensor], dict[str, Tensor], dict[str, Tensor], dict[str, Tensor],]:
-        return None
 
-    @beartype
-    def training_step(self, data, batch_idx):
-        return None
-
-    @beartype
-    def validation_step(self, data, batch_idx):
-        x, task_params = data
         device = x[next(iter(x))].device
 
         train_indices = [
@@ -84,9 +75,9 @@ class StandardOptimizerForRegression(LightningModule):
             targets = y[: self.hparams.min_train_samples + seq_idx, task_idx, ...]  # (:seq_idx, task_idx, *)
 
             dataset = TensorDataset(inputs, targets)
-            dataloader = DataLoader(dataset, batch_size=self.hparams.batch_size, shuffle=True)
+            dataloader = DataLoader(dataset, batch_size=self.hparams.inner_batch_size, shuffle=True)
 
-            for epoch in range(self.hparams.epochs):  # Number of epochs
+            for epoch in range(self.hparams.inner_epochs):  # Number of inner_epochs
                 for batch in dataloader:  # using a dataloader and random shuffle
                     input, target = batch
                     # Zero the gradients
@@ -112,19 +103,26 @@ class StandardOptimizerForRegression(LightningModule):
                     x_nexttoken["x"][self.hparams.min_train_samples + seq_idx - 1, task_idx, ...]
                 )
 
+    @beartype
+    def training_step(self, data, batch_idx):
+        return None
+
+    @beartype
+    def validation_step(self, data, batch_idx):
+
+        return
         if task_params is not None:
             task_params = {
                 name: task_params[name][self.hparams.min_train_samples - 1 :] for name in task_params
             }
 
-        return
-        """self.losses_and_metrics(
+        self.losses_and_metrics(
             {"y": preds_train},
             {"y": preds_next_token},
             x_train,
             x_nexttoken,
             task_params,
-        )"""
+        )
 
     @beartype
     def losses_and_metrics(
@@ -168,7 +166,7 @@ class StandardOptimizerForRegression(LightningModule):
         loss_val_avg = loss_val.mean()
         self.log(f"{mode}/loss_val", loss_val_avg)
 
-        # TODO: Plot the train, next-token, and validation losses as a function of the number of samples seen. Ideally this should be computed over the whole epoch and we should build something like a line-plot with number of samples on the x-axis, loss on the y-axis, and noise bands for standard deviation across the tasks. The plot can have a scroller to show it at different points during meta-optimizer training. We can use wandb line plots for this. Note: we should probably not create and log such a plot every epoch, as the number of samples would be quite large. We can do something like every N epochs.
+        # TODO: Plot the train, next-token, and validation losses as a function of the number of samples seen. Ideally this should be computed over the whole epoch and we should build something like a line-plot with number of samples on the x-axis, loss on the y-axis, and noise bands for standard deviation across the tasks. The plot can have a scroller to show it at different points during meta-optimizer training. We can use wandb line plots for this. Note: we should probably not create and log such a plot every epoch, as the number of samples would be quite large. We can do something like every N inner_epochs.
 
         return loss
 
