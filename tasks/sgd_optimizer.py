@@ -94,8 +94,10 @@ class StandardOptimizerForRegression(LightningModule):
 
         for i, (seq_idx, task_idx, model) in enumerate(models):
             with torch.inference_mode():
-                preds_train[seq_idx, task_idx, ...] = model(x_train["x"][seq_idx - 1, task_idx, ...])
-                preds_next_token[seq_idx, task_idx, ...] = model(x_nexttoken["x"][seq_idx - 1, task_idx, ...])
+                preds_train[seq_idx - 1, task_idx, ...] = model(x_train["x"][seq_idx - 1, task_idx, ...])
+                preds_next_token[seq_idx - 1, task_idx, ...] = model(
+                    x_nexttoken["x"][seq_idx - 1, task_idx, ...]
+                )
 
     @beartype
     def training_step(self, data, batch_idx):
