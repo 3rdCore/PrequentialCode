@@ -44,12 +44,16 @@ class StandardOptimizerForRegression(LightningModule):
         device = x[next(iter(x))].device
 
         train_indices = [
-            random.randint(0, i) for i in range(self.hparams.min_train_samples - 1, len(x["x"]))
-        ]  # TODO remove hardcoded name
+            random.randint(0, i)
+            for i in range(
+                self.hparams.min_train_samples - 1,
+                len(x[list(x.keys())[0]]) - 1,
+            )
+        ]
 
         x_train = {name: x[name][train_indices] for name in x}
+        x_nexttoken = {name: x[name][self.hparams.min_train_samples :] for name in x}
         preds_train = torch.zeros_like(x_train[self.hparams.y_key])
-        x_nexttoken = {name: x[name][self.hparams.min_train_samples - 1 :] for name in x}
         preds_next_token = torch.zeros_like(x_nexttoken[self.hparams.y_key])
 
         x, y = (
@@ -60,19 +64,16 @@ class StandardOptimizerForRegression(LightningModule):
             x[self.hparams.y_key],
         )
         models = [
-            deepcopy(self.model).to(device)
-            for s in range(self.hparams.min_train_samples, x.size(0) - 1)
-            for b in range(x.size(1))
+            (seq_idx, task_idx, deepcopy(self.model).to(device))
+            for seq_idx in range(self.hparams.min_train_samples, x.size(0))  # dataset size
+            for task_idx in range(x.size(1))  # tasks
         ]
 
         losses = []
 
-        for i, model in enumerate(models):
-            task_idx = i // x.size(0)
-            seq_idx = i % x.size(0)
-
-            inputs = x[: self.hparams.min_train_samples + seq_idx, task_idx, ...]  # (:seq_idx, task_idx, *)
-            targets = y[: self.hparams.min_train_samples + seq_idx, task_idx, ...]  # (:seq_idx, task_idx, *)
+        for i, (seq_idx, task_idx, model) in enumerate(models):
+            inputs = x[:seq_idx, task_idx, ...]  # (:seq_idx, task_idx, *)
+            targets = y[:seq_idx, task_idx, ...]  # (:seq_idx, task_idx, *)
 
             dataset = TensorDataset(inputs, targets)
             dataloader = DataLoader(dataset, batch_size=self.hparams.inner_batch_size, shuffle=True)
@@ -91,17 +92,10 @@ class StandardOptimizerForRegression(LightningModule):
                     loss.backward()
                     self.optimizer.step()
 
-        for i, model in enumerate(models):
-            task_idx = i // x.size(0)
-            seq_idx = i % x.size(0)
-
+        for i, (seq_idx, task_idx, model) in enumerate(models):
             with torch.inference_mode():
-                preds_train[seq_idx, task_idx, ...] = model(
-                    x_train["x"][self.hparams.min_train_samples + seq_idx - 1, task_idx, ...]
-                )
-                preds_next_token[seq_idx, task_idx, ...] = model(
-                    x_nexttoken["x"][self.hparams.min_train_samples + seq_idx - 1, task_idx, ...]
-                )
+                preds_train[seq_idx, task_idx, ...] = model(x_train["x"][seq_idx - 1, task_idx, ...])
+                preds_next_token[seq_idx, task_idx, ...] = model(x_nexttoken["x"][seq_idx - 1, task_idx, ...])
 
     @beartype
     def training_step(self, data, batch_idx):
