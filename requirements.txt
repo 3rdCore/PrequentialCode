@@ -11,3 +11,4 @@ omegaconf
 hydra-core
 beartype
 submitit
+hydra-submitit-launcher
