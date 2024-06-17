@@ -1,11 +1,13 @@
 from beartype import beartype
 from lightning import LightningModule
+from lightning.pytorch.callbacks.early_stopping import EarlyStopping
 from torch import Tensor
 from torch.nn import Module, ModuleList, MSELoss
 from torch.nn import functional as F
 from torch.nn.modules.loss import _Loss
 from torch.optim import Optimizer
 from torch.utils.data import DataLoader, TensorDataset
+from typing_extensions import override
 
 from models.context_aggregator import ContextAggregator
 from models.predictor import Predictor
@@ -17,101 +19,57 @@ class StandardOptimizerForRegression(LightningModule):
         self,
         inner_epochs: int,
         model: Module,
-        optimizer: Optimizer,
+        lr: float = 1e-4,
         min_train_samples: int = 1,
+        train_val_prop: float = 0.8,
         y_key: str = "y",
         loss_fn: _Loss = MSELoss(),
-        inner_batch_size: int = 8,
+        n_fit_total=1000,
     ):
         super().__init__()
         self.save_hyperparameters(ignore=["model", "optimizer", "loss_fn"])
         self.model = model
-        self.optimizer = optimizer
         self.loss_fn = loss_fn
+        self.current_n_fit = 0
 
     @beartype
-    def forward(
-        self, x: dict[str, Tensor]
-    ) -> tuple[dict[str, Tensor], dict[str, Tensor], dict[str, Tensor], dict[str, Tensor],]:
+    def forward(self, x: Tensor) -> Tensor:
 
-        device = x[next(iter(x))].device
+        return self.model(x)
 
-        train_indices = [
-            random.randint(0, i)
-            for i in range(
-                self.hparams.min_train_samples - 1,
-                len(x[list(x.keys())[0]]) - 1,
-            )
-        ]
+    @beartype
+    def training_step(self, data, batch_idx):
 
-        x_train = {name: x[name][train_indices] for name in x}
-        x_nexttoken = {name: x[name][self.hparams.min_train_samples :] for name in x}
-        preds_train = torch.zeros_like(x_train[self.hparams.y_key])
-        preds_next_token = torch.zeros_like(x_nexttoken[self.hparams.y_key])
+        data, task_params = data
+        x, y = data["x"], data[self.hparams.y_key]
+        # print batch size
+        preds = self.forward(x)
 
-        x, y = (
-            torch.cat(
-                [x[name][self.hparams.min_train_samples - 1 :] for name in x if name != self.hparams.y_key],
-                dim=-1,
-            ),
-            x[self.hparams.y_key],
-        )
-        models = [
-            (seq_idx, task_idx, deepcopy(self.model).to(device))
-            for seq_idx in range(self.hparams.min_train_samples, x.size(0))  # dataset size
-            for task_idx in range(x.size(1))  # tasks
-        ]
+        loss = self.loss_fn(preds, y)
+        self.log("train_loss", loss)
+
+        return loss
 
         losses = []
 
-        for i, (seq_idx, task_idx, model) in enumerate(models):
-            inputs = x[:seq_idx, task_idx, ...]  # (:seq_idx, task_idx, *)
-            targets = y[:seq_idx, task_idx, ...]  # (:seq_idx, task_idx, *)
-
-            dataset = TensorDataset(inputs, targets)
-            dataloader = DataLoader(dataset, batch_size=self.hparams.inner_batch_size, shuffle=True)
-
-            for epoch in range(self.hparams.inner_epochs):  # Number of inner_epochs
-                for batch in dataloader:  # using a dataloader and random shuffle
-                    input, target = batch
-                    # Zero the gradients
-                    self.optimizer.zero_grad()
-
-                    # Forward pass
-                    preds = model(input)
-                    loss = self.loss_fn(preds, target)
-
-                    # Backward pass
-                    loss.backward()
-                    self.optimizer.step()
-
-        for i, (seq_idx, task_idx, model) in enumerate(models):
+        for i, ((seq_idx, task_idx), model) in enumerate(models.items()):
             with torch.inference_mode():
                 preds_train[seq_idx - 1, task_idx, ...] = model(x_train["x"][seq_idx - 1, task_idx, ...])
                 preds_next_token[seq_idx - 1, task_idx, ...] = model(
                     x_nexttoken["x"][seq_idx - 1, task_idx, ...]
                 )
-
-    @beartype
-    def training_step(self, data, batch_idx):
-        return None
+        return preds_train, preds_next_token, x_train, x_nexttoken, models
 
     @beartype
     def validation_step(self, data, batch_idx):
+        data, task_params = data
+        x, y = data["x"], data[self.hparams.y_key]
+        preds = self.forward(x)
 
-        return
-        if task_params is not None:
-            task_params = {
-                name: task_params[name][self.hparams.min_train_samples - 1 :] for name in task_params
-            }
+        loss = self.loss_fn(preds, y)
+        self.log("val_loss", loss)
 
-        self.losses_and_metrics(
-            {"y": preds_train},
-            {"y": preds_next_token},
-            x_train,
-            x_nexttoken,
-            task_params,
-        )
+        return loss
 
     @beartype
     def losses_and_metrics(
@@ -173,3 +131,24 @@ class StandardOptimizerForRegression(LightningModule):
         return torch.mean(
             self.loss_fn(preds[self.hparams.y_key], target[self.hparams.y_key]), dim=-1
         )  # component-wise averaging
+
+    @beartype
+    def configure_optimizers(self) -> Optimizer:
+        return torch.optim.Adam(self.parameters(), lr=self.hparams.lr)
+
+
+class CustomEarlyStopping(EarlyStopping):
+    def __init__(self, monitor="val_loss", min_delta=0.0, patience=3, verbose=False, mode="min"):
+        super().__init__(monitor=monitor, min_delta=min_delta, patience=patience, verbose=verbose, mode=mode)
+
+    def on_train_epoch_end(self, trainer: "pl.Trainer", pl_module: "pl.LightningModule") -> None:
+        super().on_train_epoch_end(trainer, pl_module)
+        if trainer.should_stop:
+            print(trainer.datamodule.train_dataset.n_samples)
+            trainer.model.current_n_fit += 1
+            trainer.model.model.reset_parameters()
+            n_samples = random.randint(
+                trainer.model.hparams.min_train_samples, trainer.datamodule.dataset.n_samples
+            )
+            trainer.datamodule.switch_task(n_samples=n_samples)
+            trainer.should_stop = not (trainer.model.current_n_fit < trainer.model.hparams.n_fit_total)
