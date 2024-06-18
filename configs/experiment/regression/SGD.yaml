@@ -1,11 +1,15 @@
 name: "SGD_module"
 
+
 dataset:
+  _target_: datasets.interfaces.AtomicICLDataModule
+  batch_size: 256
+  dataset:
     _target_: datasets.regression.LinearRegression
     x_dim: 1
     y_dim: 1
-    n_tasks: 10000
-    n_samples: 50
+    n_tasks: 1000
+    n_samples: 1000
     noise: 0.0
     has_ood: True
     ood_style: "bimodal"
@@ -19,9 +23,10 @@ task:
   _target_: tasks.sgd_optimizer.StandardOptimizerForRegression
   inner_epochs: 100
   model:
-    _target_: torch.nn.Linear
-    in_features: ${experiment.dataset.x_dim}
-    out_features: ${experiment.dataset.y_dim}
+    _target_: models.utils.MLP
+    hidden_size: 128
+    in_features: ${experiment.dataset.dataset.x_dim}
+    out_features: ${experiment.dataset.dataset.y_dim}
   min_train_samples: 1
   lr: 1e-4
   train_val_prop: 0.8
