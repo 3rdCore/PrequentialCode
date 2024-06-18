@@ -82,8 +82,9 @@ class StandardOptimizerForRegression(LightningModule):
         self.current_inner_epochs = 0
         self.model.weight_init()
         self.trainer.optimizers = [self.configure_optimizers()]
-        # del self.trainer.callback_metrics["train_loss"]
-        self.trainer.callback_metrics["val_loss"] = torch.tensor(1000)
+        del self.trainer.callback_metrics["train_loss"]
+        del self.trainer.callback_metrics["val_loss"]
+        self.trainer.val_check_batch = 1
 
     @torch.inference_mode()
     def log_loss_vs_nsamples(self):
@@ -147,6 +148,3 @@ class CustomEarlyStopping(EarlyStopping):
             trainer.should_stop = True
         if trainer.should_stop:
             trainer.model.on_fit_end()
-
-    def on_validation_epoch_end(self, trainer: Trainer, pl_module: LightningModule) -> None:
-        super().on_validation_epoch_end(trainer, pl_module)  # call EarlyStop Callback
