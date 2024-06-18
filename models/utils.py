@@ -168,14 +168,22 @@ def fastfood_torched_batched(
 
 
 class MLP(nn.Module):
-    def __init__(self, input_size, hidden_size, output_size):
+    @beartype
+    def __init__(self, in_features: int, hidden_size: int, out_features: int):
         super(MLP, self).__init__()
-        self.fc1 = nn.Linear(input_size, hidden_size)
+        self.fc1 = nn.Linear(in_features, hidden_size)
         self.relu = nn.ReLU()
-        self.fc2 = nn.Linear(hidden_size, output_size)
+        self.fc2 = nn.Linear(hidden_size, out_features)
 
-    def forward(self, x):
+    @beartype
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         out = self.fc1(x)
         out = self.relu(out)
         out = self.fc2(out)
         return out
+
+    def weight_init(self):
+        for m in self.modules():
+            if isinstance(m, nn.Linear):
+                nn.init.xavier_normal_(m.weight)
+                nn.init.constant_(m.bias, 0)
