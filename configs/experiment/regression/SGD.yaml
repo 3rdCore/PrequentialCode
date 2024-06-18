@@ -7,8 +7,8 @@ dataset:
     n_tasks: 10000
     n_samples: 50
     noise: 0.0
-    has_ood: False
-    ood_style: "shift_scale"
+    has_ood: True
+    ood_style: "bimodal"
     ood_shift: 2.0
     ood_scale: 3.0
     data_dist: "normal"
@@ -27,4 +27,4 @@ task:
   train_val_prop: 0.8
   n_fit_total: 1000
 callbacks:
-    _target_: tasks.sgd_optimizer.CustomEarlyStopping
+    [_target_: tasks.sgd_optimizer.CustomEarlyStopping]
