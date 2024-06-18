@@ -1,5 +1,4 @@
 import random
-from abc import ABC, abstractmethod
 from copy import deepcopy
 from typing import Iterable, Literal
 
@@ -35,6 +34,7 @@ class StandardOptimizerForRegression(LightningModule):
     ):
         super().__init__()
         self.save_hyperparameters(ignore=["model", "optimizer", "loss_fn"])
+        self.current_inner_epochs = 0
         self.model = model
         self.loss_fn = loss_fn
         self.current_n_fit = 0
@@ -56,16 +56,6 @@ class StandardOptimizerForRegression(LightningModule):
         self.log("train_loss", loss)
 
         return loss
-
-        losses = []
-
-        for i, ((seq_idx, task_idx), model) in enumerate(models.items()):
-            with torch.inference_mode():
-                preds_train[seq_idx - 1, task_idx, ...] = model(x_train["x"][seq_idx - 1, task_idx, ...])
-                preds_next_token[seq_idx - 1, task_idx, ...] = model(
-                    x_nexttoken["x"][seq_idx - 1, task_idx, ...]
-                )
-        return preds_train, preds_next_token, x_train, x_nexttoken, models
 
     @beartype
     def validation_step(self, data, batch_idx):
@@ -124,24 +114,60 @@ class StandardOptimizerForRegression(LightningModule):
 
         return loss
 
-    @abstractmethod
-    def loss_function(self, target: dict[str, Tensor], preds: dict[str, Tensor]) -> Tensor:
-        """Do not average across samples and tasks! Return shape should be
-
-        Args:
-            target (dict[str, Tensor]): Inputs/targets (samples, tasks, *).
-            preds (dict[str, Tensor]): Predictions (samples, tasks, *).
-
-        Returns:
-            Tensor: Losses (samples, tasks).
-        """
-        return torch.mean(
-            self.loss_fn(preds[self.hparams.y_key], target[self.hparams.y_key]), dim=-1
-        )  # component-wise averaging
-
     @beartype
     def configure_optimizers(self) -> Optimizer:
         return torch.optim.Adam(self.parameters(), lr=self.hparams.lr)
+
+    @torch.inference_mode()
+    def on_fit_end(self):  # not a callback
+        self.log_loss_vs_nsamples()
+
+    @torch.inference_mode()
+    def log_loss_vs_nsamples(self):
+        if self.logger is None:
+            return
+
+        # Get the dataloader
+
+        loss_train, loss_eval = [], []
+        loss_train_avg = torch.mean(torch.stack(loss_train))
+
+        dl = self.trainer.datamodule.train_dataloader()
+        for data, _ in dl:
+            x, y = data["x"].to(self.device), data[self.hparams.y_key].to(self.device)
+            preds = self.forward(x)
+            loss = self.loss_fn(y, preds)
+            loss_train.append(loss.item())
+        n_samples = len(dl)
+        print(n_samples)
+        l_train_i = (sum(loss_train) / n_samples).cpu()
+
+        dl = self.trainer.datamodule.val_dataloader()
+        for data, _ in dl:
+            x, y = data["x"].to(self.device), data[self.hparams.y_key].to(self.device)
+            preds = self.forward(x)
+            loss = self.loss_fn(y, preds)
+            loss_eval.append(loss.item())
+        n_eval_sample = len(dl)
+        l_nexttoken_i = (sum(loss_eval) / n_eval_sample).cpu()
+
+        self.logger.experiment.log(
+            {
+                "n_samples": n_samples,
+                "/n_sample_loss_train": l_train_i,
+                "/n_sample_loss_nexttoken": l_nexttoken_i,
+            }
+        )
+
+    @beartype
+    def sample_new_task(self, trainer):
+        """Sample a new task and update the dataloaders."""
+        self.current_n_fit += 1
+        self.current_inner_epochs = 0
+        self.model.reset_parameters()
+        n_samples = random.randint(self.hparams.min_train_samples, trainer.datamodule.dataset.n_samples)
+        trainer.datamodule.switch_task(n_samples=n_samples)
+        trainer.should_stop = not (self.current_n_fit < self.hparams.n_fit_total)
 
 
 class CustomEarlyStopping(EarlyStopping):
@@ -150,12 +176,9 @@ class CustomEarlyStopping(EarlyStopping):
 
     def on_train_epoch_end(self, trainer: "pl.Trainer", pl_module: "pl.LightningModule") -> None:
         super().on_train_epoch_end(trainer, pl_module)
+        self.current_inner_epochs += 1
+        if self.current_inner_epochs >= self.hparams.inner_epochs:
+            trainer.should_stop = True
         if trainer.should_stop:
-            print(trainer.datamodule.train_dataset.n_samples)
-            trainer.model.current_n_fit += 1
-            trainer.model.model.reset_parameters()
-            n_samples = random.randint(
-                trainer.model.hparams.min_train_samples, trainer.datamodule.dataset.n_samples
-            )
-            trainer.datamodule.switch_task(n_samples=n_samples)
-            trainer.should_stop = not (trainer.model.current_n_fit < trainer.model.hparams.n_fit_total)
+            trainer.model.on_fit_end()
+            trainer.model.sample_new_task(trainer)
