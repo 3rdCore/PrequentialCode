@@ -185,5 +185,6 @@ class MLP(nn.Module):
     def weight_init(self):
         for m in self.modules():
             if isinstance(m, nn.Linear):
-                nn.init.xavier_normal_(m.weight)
-                nn.init.constant_(m.bias, 0)
+                device = m.weight.device
+                nn.init.xavier_normal_(m.weight.data)
+                m.bias.data.fill_(0).to(device)
