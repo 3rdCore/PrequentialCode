@@ -66,7 +66,7 @@ class AtomicICLDataModule(LightningDataModule):
         self.train_dataset, self.val_dataset = shuffle_train_val_split(
             dataset, val_prop=self.hparams.val_prop
         )
-        self.switch_task(self.hparams.current_task)
+        self.switch_task(task=self.hparams.current_task)
 
     @beartype
     def switch_task(
@@ -83,7 +83,7 @@ class AtomicICLDataModule(LightningDataModule):
             (self.val_dataset.current_task + 1) % self.dataset.n_tasks if task is None else task
         )
         if n_samples is not None:
-            val_size = int(n_samples * self.hparams.val_prop)
+            val_size = max(1, int(n_samples * self.hparams.val_prop))
             train_size = n_samples - val_size
             self.val_dataset.n_samples = val_size
             self.train_dataset.n_samples = train_size
