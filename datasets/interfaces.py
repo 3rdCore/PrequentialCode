@@ -40,7 +40,7 @@ class ICLDataModule(LightningDataModule):
         num_workers: int = 0,
     ):
         super().__init__()
-        self.save_hyperparameters(ignore=["train_dataset", "val_dataset"])
+        self.save_hyperparameters()
         self.train_dataset = train_dataset
         self.val_dataset = val_dataset
 

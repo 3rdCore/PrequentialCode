@@ -17,6 +17,9 @@ def train(cfg):
     # Add experiment metadata to the logger
     if logger:
         logger.experiment.config.update({"name": cfg.experiment.name})
+        logger.experiment.config.update(
+            {"dataset_config": OmegaConf.to_container(cfg.experiment.dataset, resolve=True)}
+        )
 
     trainer = Trainer(
         logger=logger,
