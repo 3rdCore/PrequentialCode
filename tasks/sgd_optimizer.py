@@ -1,3 +1,4 @@
+import math
 import random
 from copy import deepcopy
 from typing import Iterable, Literal
@@ -36,7 +37,6 @@ class StandardOptimizerForRegression(LightningModule):
         self.save_hyperparameters(ignore=["model", "optimizer", "loss_fn"])
         self.current_inner_epochs = 0
         self.model = model
-        self.init_model = deepcopy(model)
         self.loss_fn = loss_fn
         self.current_n_fit = 0
 
@@ -49,11 +49,10 @@ class StandardOptimizerForRegression(LightningModule):
 
         data, task_params = data
         x, y = data["x"], data[self.hparams.y_key]
-        # print batch size
         preds = self.forward(x)
 
         loss = self.loss_fn(preds, y)
-        self.log("train_loss", loss)
+        self.log("train_loss", loss, prog_bar=True, on_step=False, on_epoch=True)
 
         return loss
 
@@ -64,8 +63,7 @@ class StandardOptimizerForRegression(LightningModule):
         preds = self.forward(x)
 
         loss = self.loss_fn(preds, y)
-        self.log("val_loss", loss)
-
+        self.log("val_loss", loss, prog_bar=True, on_step=False, on_epoch=True)
         return loss
 
     @beartype
@@ -73,10 +71,10 @@ class StandardOptimizerForRegression(LightningModule):
         return torch.optim.Adam(self.parameters(), lr=self.hparams.lr)
 
     @torch.no_grad()
-    def on_fit_end(self):  # not a callback
+    def on_atomic_fit_end(self):  # not a callback
         self.log_loss_vs_nsamples()
         self.fit_new_task(self.trainer)
-        self.trainer.callbacks[0].reset()
+        self.trainer.should_stop = not (self.current_n_fit < self.hparams.n_fit_total)
 
         self.current_n_fit += 1
         self.current_inner_epochs = 0
@@ -84,7 +82,7 @@ class StandardOptimizerForRegression(LightningModule):
         self.trainer.optimizers = [self.configure_optimizers()]
         del self.trainer.callback_metrics["train_loss"]
         del self.trainer.callback_metrics["val_loss"]
-        self.trainer.val_check_batch = 1
+        # self.trainer._run_sanity_check()
 
     @torch.inference_mode()
     def log_loss_vs_nsamples(self):
@@ -109,7 +107,7 @@ class StandardOptimizerForRegression(LightningModule):
             loss = self.loss_fn(y, preds)
             loss_eval += loss.item() * x.size(0)
             total_eval_samples += x.size(0)
-        l_nexttoken_i = loss_eval / total_eval_samples if total_eval_samples > 0 else -1
+        l_nexttoken_i = loss_eval / total_eval_samples
 
         self.logger.experiment.log(
             {
@@ -123,16 +121,51 @@ class StandardOptimizerForRegression(LightningModule):
     def fit_new_task(self, trainer):
         """Sample a new task and update the dataloaders."""
 
-        n_samples = random.randint(self.hparams.min_train_samples, trainer.datamodule.dataset.n_samples)
+        n_samples = random.randint(
+            self.hparams.min_train_samples, trainer.datamodule.dataset.n_samples
+        )  # trainer.datamodule.dataset.n_samples is the original number of samples
+        print(f"Switching to task with {n_samples} samples")
         trainer.datamodule.switch_task(n_samples=n_samples)
-        trainer.should_stop = not (self.current_n_fit < self.hparams.n_fit_total)
-        # update trainer callback on tqdm bar
+        batch_size = self.trainer.datamodule.hparams["batch_size"]
+
+        self.trainer.val_check_batch = math.ceil(len(self.trainer.datamodule.train_dataset) / batch_size)
+
+    @beartype
+    def on_train_start(self) -> None:
+        super().on_train_start()
+        self.fit_new_task(self.trainer)
+        pass
+
+    @beartype
+    def on_train_epoch_start(self) -> None:
+        pass
+        # print("TRAIN \n")
+
+    @beartype
+    def on_validation_epoch_start(self) -> None:
+        pass
+        # print("EVAL \n")
 
 
 class CustomEarlyStopping(EarlyStopping):
     @beartype
-    def __init__(self, monitor="val_loss", min_delta=0.0001, patience=3, verbose=True, mode="min"):
-        super().__init__(monitor=monitor, min_delta=min_delta, patience=patience, verbose=verbose, mode=mode)
+    def __init__(
+        self,
+        monitor="val_loss_epoch",
+        min_delta=0.0001,
+        patience=3,
+        verbose=True,
+        mode="min",
+        check_on_train_epoch_end=False,
+    ):
+        super().__init__(
+            monitor=monitor,
+            min_delta=min_delta,
+            patience=patience,
+            verbose=verbose,
+            mode=mode,
+            check_on_train_epoch_end=check_on_train_epoch_end,
+        )
 
     @beartype
     def reset(self):
@@ -141,10 +174,12 @@ class CustomEarlyStopping(EarlyStopping):
         self.wait_count = 0
         self.stopped_epoch = 0
 
-    def on_train_epoch_end(self, trainer: Trainer, pl_module: LightningModule) -> None:
-        super().on_train_epoch_end(trainer, pl_module)  # call EarlyStop Callback
+    @beartype
+    def on_validation_end(self, trainer: Trainer, pl_module: LightningModule) -> None:
+        super().on_validation_end(trainer, pl_module)  # call EarlyStop Callback
         trainer.model.current_inner_epochs += 1
         if trainer.model.current_inner_epochs >= trainer.model.hparams.inner_epochs:
             trainer.should_stop = True
         if trainer.should_stop:
-            trainer.model.on_fit_end()
+            self.reset()  # reset the early stopping callback
+            trainer.model.on_atomic_fit_end()
