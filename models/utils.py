@@ -175,6 +175,12 @@ class MLP(nn.Module):
         self.relu = nn.ReLU()
         self.fc2 = nn.Linear(hidden_size, out_features)
 
+        # Store initial weights and biases
+        self.initial_fc1_weight = self.fc1.weight.clone().detach()
+        self.initial_fc1_bias = self.fc1.bias.clone().detach()
+        self.initial_fc2_weight = self.fc2.weight.clone().detach()
+        self.initial_fc2_bias = self.fc2.bias.clone().detach()
+
     @beartype
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         out = self.fc1(x)
@@ -183,8 +189,8 @@ class MLP(nn.Module):
         return out
 
     def weight_init(self):
-        for m in self.modules():
-            if isinstance(m, nn.Linear):
-                device = m.weight.device
-                nn.init.xavier_normal_(m.weight.data)
-                m.bias.data.fill_(0).to(device)
+        # Reset weights and biases to initial values
+        self.fc1.weight.data = self.initial_fc1_weight.clone().detach().to(self.fc1.weight.device)
+        self.fc1.bias.data = self.initial_fc1_bias.clone().detach().to(self.fc1.bias.device)
+        self.fc2.weight.data = self.initial_fc2_weight.clone().detach().to(self.fc2.weight.device)
+        self.fc2.bias.data = self.initial_fc2_bias.clone().detach().to(self.fc2.bias.device)
