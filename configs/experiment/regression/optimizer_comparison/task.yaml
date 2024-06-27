@@ -1,0 +1,16 @@
+dataset:
+  _target_: datasets.interfaces.AtomicICLDataModule
+  batch_size: 32
+  dataset:
+    _target_: datasets.regression.LinearRegression
+    x_dim: 1
+    y_dim: 1
+    n_tasks: 10000
+    n_samples: 1000
+    noise: 0.0
+    has_ood: True
+    ood_style: "bimodal"
+    ood_shift: 2.0
+    ood_scale: 3.0
+    data_dist: "normal"
+    shuffle_samples: True
