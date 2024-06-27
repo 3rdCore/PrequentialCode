@@ -34,7 +34,7 @@ class StandardOptimizerForRegression(LightningModule):
         n_fit_total=1000,
     ):
         super().__init__()
-        self.save_hyperparameters(ignore=["model", "optimizer", "loss_fn"])
+        self.save_hyperparameters(ignore=["optimizer", "loss_fn"])
         self.current_inner_epochs = 0
         self.model = model
         self.loss_fn = loss_fn
