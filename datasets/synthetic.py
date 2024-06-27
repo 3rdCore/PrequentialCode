@@ -88,7 +88,6 @@ class AtomicSyntheticDataset:
     @beartype
     def __getitem__(self, index: int) -> tuple[dict[str, Tensor], dict[str, Any] | None]:
         data, task_params = self.multi_dataset[self.current_task]
-        assert index < len(self)
         data = {name: data[name][index] for name in data}
 
         return data, task_params
