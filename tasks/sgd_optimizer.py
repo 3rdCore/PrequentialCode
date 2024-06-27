@@ -45,7 +45,7 @@ class StandardOptimizerForRegression(LightningModule):
         return self.model(x)
 
     @beartype
-    def training_step(self, data, batch_idx):
+    def training_step(self, data, batch_idx) -> Tensor:
 
         data, task_params = data
         x, y = data["x"], data[self.hparams.y_key]
@@ -57,7 +57,7 @@ class StandardOptimizerForRegression(LightningModule):
         return loss
 
     @beartype
-    def validation_step(self, data, batch_idx):
+    def validation_step(self, data, batch_idx) -> Tensor:
         data, task_params = data
         x, y = data["x"], data[self.hparams.y_key]
         preds = self.forward(x)
@@ -70,10 +70,28 @@ class StandardOptimizerForRegression(LightningModule):
     def configure_optimizers(self) -> Optimizer:
         return torch.optim.Adam(self.parameters(), lr=self.hparams.lr)
 
+    @beartype
+    def on_train_start(self) -> None:
+        """Sample a new task, a new dataset size and update the dataloaders before running first inner training loop."""
+        super().on_train_start()
+        self.prepare_to_fit_new_task(self.trainer)
+        pass
+
+    @beartype
+    def on_train_epoch_end(self) -> None:
+        super().on_train_epoch_end()
+        self.current_inner_epochs += 1
+
+    @beartype
     @torch.no_grad()
-    def on_atomic_fit_end(self):  # not a callback
+    def on_atomic_fit_end(self) -> None:
+        """
+        Log training and evaluation loss, sample a new dataset, reset model, optimizers, delete stored metrics.
+
+        Warning, this is not a standard callback. I won't be called anywhere in the code of lightning package.
+        """
         self.log_loss_vs_nsamples()
-        self.fit_new_task(self.trainer)
+        self.prepare_to_fit_new_task(self.trainer)
         self.trainer.should_stop = not (self.current_n_fit < self.hparams.n_fit_total)
 
         self.current_n_fit += 1
@@ -85,7 +103,7 @@ class StandardOptimizerForRegression(LightningModule):
         # self.trainer._run_sanity_check()
 
     @torch.inference_mode()
-    def log_loss_vs_nsamples(self):
+    def log_loss_vs_nsamples(self) -> None:
         if self.logger is None:
             return
         loss_train, loss_eval = 0, 0
@@ -118,33 +136,16 @@ class StandardOptimizerForRegression(LightningModule):
         )
 
     @beartype
-    def fit_new_task(self, trainer):
+    def prepare_to_fit_new_task(self, trainer) -> None:
         """Sample a new task and update the dataloaders."""
 
         n_samples = random.randint(
             self.hparams.min_train_samples, trainer.datamodule.dataset.n_samples
-        )  # trainer.datamodule.dataset.n_samples is the original number of samples
-        print(f"Switching to task with {n_samples} samples")
+        )  # trainer.datamodule.dataset.n_samples is the original number of samples (before truncating)
         trainer.datamodule.switch_task(n_samples=n_samples)
         batch_size = self.trainer.datamodule.hparams["batch_size"]
 
         self.trainer.val_check_batch = math.ceil(len(self.trainer.datamodule.train_dataset) / batch_size)
-
-    @beartype
-    def on_train_start(self) -> None:
-        super().on_train_start()
-        self.fit_new_task(self.trainer)
-        pass
-
-    @beartype
-    def on_train_epoch_start(self) -> None:
-        pass
-        # print("TRAIN \n")
-
-    @beartype
-    def on_validation_epoch_start(self) -> None:
-        pass
-        # print("EVAL \n")
 
 
 class CustomEarlyStopping(EarlyStopping):
@@ -168,7 +169,8 @@ class CustomEarlyStopping(EarlyStopping):
         )
 
     @beartype
-    def reset(self):
+    def reset(self) -> None:
+        """Resets the EarlyStopping object to the initial state."""
         torch_inf = torch.tensor(torch.inf)
         self.best_score = torch_inf if self.monitor_op == torch.lt else -torch_inf
         self.wait_count = 0
@@ -176,10 +178,13 @@ class CustomEarlyStopping(EarlyStopping):
 
     @beartype
     def on_validation_end(self, trainer: Trainer, pl_module: LightningModule) -> None:
+        """Call EarlyStop Callback and check if the model should stop training at the end of the validation loop.
+        Args:
+            trainer: the lightning trainer
+            pl_module: the lightning module being trained
+        """
         super().on_validation_end(trainer, pl_module)  # call EarlyStop Callback
-        trainer.model.current_inner_epochs += 1
-        if trainer.model.current_inner_epochs >= trainer.model.hparams.inner_epochs:
-            trainer.should_stop = True
-        if trainer.should_stop:
+
+        if trainer.should_stop or trainer.model.current_inner_epochs >= trainer.model.hparams.inner_epochs:
             self.reset()  # reset the early stopping callback
             trainer.model.on_atomic_fit_end()
