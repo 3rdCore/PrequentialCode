@@ -1,0 +1,56 @@
+name: "linear_regression"
+
+task:
+  _target_: tasks.meta_optimizer_regression.MetaOptimizerForRegression
+  meta_objective: prequential
+  min_train_samples: 1
+  lr: 1e-4
+  context_aggregator:
+    _target_: models.context_aggregator.Transfoptimizer
+    x_dim: ${ast_eval:'${experiment.dataset.train_dataset.x_dim} + ${experiment.dataset.train_dataset.y_dim}'}
+    z_dim: 128
+    h_dim: 256
+    n_layers: 4
+    n_heads: 4
+  predictor:
+    _target_: models.predictor.MLPConcatPredictor
+    x_dim: ${experiment.dataset.train_dataset.x_dim}
+    z_dim: ${experiment.task.context_aggregator.z_dim}
+    y_dim: ${experiment.dataset.train_dataset.y_dim}
+    h_dim: 256
+    n_layers: 5
+  probe_n_context_points: [1, 2, 5]
+
+dataset:
+  _target_: datasets.interfaces.ICLDataModule
+  batch_size: 32
+  train_dataset:
+    _target_: datasets.regression.LinearRegression
+    x_dim: 1
+    y_dim: 1
+    n_tasks: 10000
+    n_samples: 1000
+    noise: 0.0
+    has_ood: True
+    ood_style: "bimodal"
+    ood_shift: 2.0
+    ood_scale: 3.0
+    data_dist: "normal"
+    shuffle_samples: True
+  val_dataset:
+    _target_: datasets.regression.LinearRegression
+    x_dim: ${experiment.dataset.train_dataset.x_dim}
+    y_dim: ${experiment.dataset.train_dataset.y_dim}
+    n_tasks: 1000
+    n_samples: ${experiment.dataset.train_dataset.n_samples}
+    noise: ${experiment.dataset.train_dataset.noise}
+    has_ood: ${experiment.dataset.train_dataset.has_ood}
+    ood_shift: ${experiment.dataset.train_dataset.ood_shift}
+    ood_scale: ${experiment.dataset.train_dataset.ood_scale}
+    data_dist: ${experiment.dataset.train_dataset.data_dist}
+    shuffle_samples: ${experiment.dataset.train_dataset.shuffle_samples}
+
+trainer:
+  max_epochs: 100
+
+callbacks:
