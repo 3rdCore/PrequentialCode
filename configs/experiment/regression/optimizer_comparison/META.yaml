@@ -13,13 +13,13 @@ task:
     n_layers: 4
     n_heads: 4
   predictor:
-    _target_: models.predictor.MLPConcatPredictor
+    _target_: models.predictor.MLPLowRankPredictor
     x_dim: ${experiment.dataset.train_dataset.x_dim}
     z_dim: ${experiment.task.context_aggregator.z_dim}
     y_dim: ${experiment.dataset.train_dataset.y_dim}
-    h_dim: 256
-    n_layers: 5
-  probe_n_context_points: [1, 2, 5]
+    h_dim: 1024
+    n_layers: 2
+  probe_n_context_points: [1, 5, 50, 100, 500]
 
 dataset:
   _target_: datasets.interfaces.ICLDataModule
@@ -51,6 +51,6 @@ dataset:
     shuffle_samples: ${experiment.dataset.train_dataset.shuffle_samples}
 
 trainer:
-  max_epochs: 100
+  max_epochs: 50
 
 callbacks:

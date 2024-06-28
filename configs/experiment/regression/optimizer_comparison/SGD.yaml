@@ -10,17 +10,19 @@ task:
   model:
     _target_: models.utils.MLP
     hidden_size: 256
+    n_layers: 2
     in_features: ${experiment.dataset.dataset.x_dim}
     out_features: ${experiment.dataset.dataset.y_dim}
   min_train_samples: 5
   lr: 1e-4
   train_val_prop: 0.8
   n_fit_total: 1000
+
 callbacks:
-  - _target_: tasks.sgd_optimizer.CustomEarlyStopping
-    patience: 5
-    monitor: "val_loss"
-    min_delta: 0.0005
+  _target_: tasks.sgd_optimizer.CustomEarlyStopping
+  patience: 5
+  monitor: "val_loss"
+  min_delta: 0.0005
 
 dataset:
   _target_: datasets.interfaces.AtomicICLDataModule
