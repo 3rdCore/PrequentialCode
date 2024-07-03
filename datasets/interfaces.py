@@ -84,7 +84,7 @@ class AtomicICLDataModule(LightningDataModule):
         )
         if n_samples is not None:
             val_size = max(1, int(n_samples * self.hparams.val_prop))
-            train_size = n_samples - val_size
+            train_size = max(1, n_samples - val_size)
             self.val_dataset.n_samples = val_size
             self.train_dataset.n_samples = train_size
 
