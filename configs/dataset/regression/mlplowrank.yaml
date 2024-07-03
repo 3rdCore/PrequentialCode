@@ -1,0 +1,36 @@
+name : "mlplowrank_regression"
+
+train_dataset:
+  _target_: datasets.regression.MLPLowRankRegression
+  x_dim: 1
+  y_dim: 1
+  z_dim: 10
+  n_tasks: 10000
+  n_samples: 50
+  noise: 0.0
+  has_ood: True
+  ood_style: "bimodal"
+  ood_shift: 2.0
+  ood_scale: 3.0
+  data_dist: "normal"
+  shuffle_samples: True
+  activation: "relu"
+  n_layers: 2
+  hidden_dim: 64
+val_dataset:
+  _target_: datasets.regression.MLPLowRankRegression
+  x_dim: ${dataset.train_dataset.x_dim}
+  y_dim: ${dataset.train_dataset.y_dim}
+  z_dim: ${dataset.train_dataset.z_dim}
+  n_tasks: 1000
+  n_samples: ${dataset.train_dataset.n_samples}
+  noise: ${dataset.train_dataset.noise}
+  has_ood: ${dataset.train_dataset.has_ood}
+  ood_style: ${dataset.train_dataset.ood_style}
+  ood_shift: ${dataset.train_dataset.ood_shift}
+  ood_scale: ${dataset.train_dataset.ood_scale}
+  data_dist: ${dataset.train_dataset.data_dist}
+  shuffle_samples: ${dataset.train_dataset.shuffle_samples}
+  activation: ${dataset.train_dataset.activation}
+  n_layers: ${dataset.train_dataset.n_layers}
+  hidden_dim: ${dataset.train_dataset.hidden_dim}
