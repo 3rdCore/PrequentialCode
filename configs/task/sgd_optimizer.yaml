@@ -1,5 +1,5 @@
 #@package _global_
-task_name: "SGD_optimizer"
+task_name: "sgd_optimizer"
 
 datamodule:
   _target_: datasets.interfaces.AtomicICLDataModule
