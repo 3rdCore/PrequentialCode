@@ -6,7 +6,7 @@ train_dataset:
   y_dim: 1
   z_dim: 10
   n_tasks: 10000
-  n_samples: 50
+  n_samples: 1000
   noise: 0.0
   has_ood: True
   ood_style: "bimodal"

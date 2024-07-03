@@ -16,9 +16,5 @@ logger:
   offline: False
   tags: null
 
-callbacks:
-
-trainer:
-      max_epochs: 50
 
 name: ${task_name}_${dataset.name}
