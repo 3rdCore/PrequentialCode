@@ -130,8 +130,8 @@ class StandardOptimizerForRegression(LightningModule):
         self.logger.experiment.log(
             {
                 "n_samples": total_train_samples,
-                "/n_sample_loss_train": l_train_i,
-                "/n_sample_loss_nexttoken": l_nexttoken_i,
+                "val_tasks/n_sample_loss_train": l_train_i,
+                "val_tasks/n_sample_loss_nexttoken": l_nexttoken_i,
             }
         )
 
