@@ -25,7 +25,7 @@ class StandardOptimizerForRegression(LightningModule):
     def __init__(
         self,
         inner_epochs: int,
-        model: Module,
+        predictor: Module,
         lr: float = 1e-4,
         min_train_samples: int = 1,
         train_val_prop: float = 0.8,
@@ -34,15 +34,15 @@ class StandardOptimizerForRegression(LightningModule):
         n_fit_total=1000,
     ):
         super().__init__()
-        self.save_hyperparameters(ignore=["model", "optimizer", "loss_fn"])
+        self.save_hyperparameters(ignore=["optimizer", "loss_fn"])
         self.current_inner_epochs = 0
-        self.model = model
+        self.predictor = predictor
         self.loss_fn = loss_fn
         self.current_n_fit = 0
 
     @beartype
     def forward(self, x: Tensor) -> Tensor:
-        return self.model(x)
+        return self.predictor(x)
 
     @beartype
     def training_step(self, data, batch_idx) -> Tensor:
@@ -86,7 +86,7 @@ class StandardOptimizerForRegression(LightningModule):
     @torch.no_grad()
     def on_atomic_fit_end(self) -> None:
         """
-        Log training and evaluation loss, sample a new dataset, reset model, optimizers, delete stored metrics.
+        Log training and evaluation loss, sample a new dataset, reset predictor, optimizers, delete stored metrics.
 
         Warning, this is not a standard callback. I won't be called anywhere in the code of lightning package.
         """
@@ -96,7 +96,7 @@ class StandardOptimizerForRegression(LightningModule):
 
         self.current_n_fit += 1
         self.current_inner_epochs = 0
-        self.model.weight_init()
+        self.predictor.weight_init()
         self.trainer.optimizers = [self.configure_optimizers()]
         del self.trainer.callback_metrics["train_loss"]
         del self.trainer.callback_metrics["val_loss"]
@@ -178,7 +178,7 @@ class CustomEarlyStopping(EarlyStopping):
 
     @beartype
     def on_validation_end(self, trainer: Trainer, pl_module: LightningModule) -> None:
-        """Call EarlyStop Callback and check if the model should stop training at the end of the validation loop.
+        """Call EarlyStop Callback and check if the predictor should stop training at the end of the validation loop.
         Args:
             trainer: the lightning trainer
             pl_module: the lightning module being trained
