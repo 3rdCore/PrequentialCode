@@ -1,0 +1,6 @@
+_target_: models.predictor.MLPLowRankPredictor
+x_dim: ${dataset.train_dataset.x_dim}
+z_dim: ${task.context_aggregator.z_dim}
+y_dim: ${dataset.train_dataset.y_dim}
+h_dim: 1024
+n_layers: 2

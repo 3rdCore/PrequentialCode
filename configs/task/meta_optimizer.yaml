@@ -1,4 +1,8 @@
 #@package _global_
+
+defaults:
+  - _self_
+  - predictor: MLPConcatPredictor
 task_name: "meta_optimizer"
 
 datamodule:
@@ -24,11 +28,5 @@ task:
     h_dim: 256
     n_layers: 4
     n_heads: 4
-  predictor:
-    _target_: models.predictor.MLPConcatPredictor
-    x_dim: ${datamodule.train_dataset.x_dim}
-    z_dim: ${task.context_aggregator.z_dim}
-    y_dim: ${datamodule.train_dataset.y_dim}
-    h_dim: 256
-    n_layers: 5
+  predictor: ${predictor}
   probe_n_context_points: [1, 5, 50, 500]
