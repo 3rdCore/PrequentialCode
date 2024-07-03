@@ -12,21 +12,20 @@ from utils import ast_eval
 def train(cfg):
     seed_everything(cfg.seed)
 
-    dataset = hydra.utils.instantiate(cfg.experiment.dataset)
-    task = hydra.utils.instantiate(cfg.experiment.task)
+    dataset = hydra.utils.instantiate(cfg.datamodule)
+    task = hydra.utils.instantiate(cfg.task)
     logger = hydra.utils.instantiate(cfg.logger) if cfg.logger else False
-    callbacks = [hydra.utils.instantiate(cfg.experiment.callbacks)] if cfg.experiment.callbacks else None
+    callbacks = [hydra.utils.instantiate(cfg.callbacks)] if cfg.callbacks else None
 
-    # Add experiment metadata to the logger
     if logger:
-        logger.experiment.config.update(OmegaConf.to_container(cfg.experiment, resolve=True))
-        logger.experiment.config.update(OmegaConf.to_container(cfg.seed, resolve=True))
+        logger.experiment.config.update(OmegaConf.to_container(cfg, resolve=True))
+        logger.experiment.config.update({"seed": cfg.seed})
 
     trainer = Trainer(
         logger=logger,
         callbacks=callbacks,
         enable_checkpointing=False,
-        **cfg.experiment.trainer,
+        **cfg.trainer,
     )
     trainer.fit(model=task, datamodule=dataset)
 
