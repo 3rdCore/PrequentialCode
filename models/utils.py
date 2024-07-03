@@ -165,3 +165,31 @@ def fastfood_torched_batched(
     )
 
     return ret
+
+
+class MLP(nn.Module):
+    @beartype
+    def __init__(self, in_features: int, hidden_size: int, n_layers: int, out_features: int):
+        super().__init__()
+        self.layers = nn.ModuleList()
+        self.relu = nn.ReLU()
+        self.layers.append(nn.Linear(in_features, hidden_size))
+        for i in range(n_layers - 2):
+            self.layers.append(nn.Linear(hidden_size, hidden_size))
+        self.layers.append(nn.Linear(hidden_size, out_features))
+        # Store initial weights and biases
+        self.initial_weights = [layer.weight.clone().detach() for layer in self.layers]
+        self.initial_biases = [layer.bias.clone().detach() for layer in self.layers]
+
+    @beartype
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        for i, layer in enumerate(self.layers[:-1]):
+            x = self.relu(layer(x))
+        x = self.layers[-1](x)  # Apply the last layer without ReLU
+        return x
+
+    def weight_init(self):
+        # Reset weights and biases to initial values for all layers
+        for i, layer in enumerate(self.layers):
+            layer.weight.data = self.initial_weights[i].clone().detach().to(layer.weight.device)
+            layer.bias.data = self.initial_biases[i].clone().detach().to(layer.bias.device)

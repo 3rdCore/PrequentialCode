@@ -1,0 +1,42 @@
+name: "SGD_module"
+
+trainer:
+    max_epochs: 100000
+    check_val_every_n_epoch : 1
+    log_every_n_steps : 1
+task:
+  _target_: tasks.sgd_optimizer.StandardOptimizerForRegression
+  inner_epochs: 100
+  model:
+    _target_: models.utils.MLP
+    hidden_size: 256
+    n_layers: 2
+    in_features: ${experiment.dataset.dataset.x_dim}
+    out_features: ${experiment.dataset.dataset.y_dim}
+  min_train_samples: 5
+  lr: 1e-4
+  train_val_prop: 0.8
+  n_fit_total: 1000
+
+callbacks:
+  _target_: tasks.sgd_optimizer.CustomEarlyStopping
+  patience: 5
+  monitor: "val_loss"
+  min_delta: 0.0005
+
+dataset:
+  _target_: datasets.interfaces.AtomicICLDataModule
+  batch_size: 32
+  dataset:
+    _target_: datasets.regression.LinearRegression
+    x_dim: 1
+    y_dim: 1
+    n_tasks: 10000
+    n_samples: 1000
+    noise: 0.0
+    has_ood: True
+    ood_style: "bimodal"
+    ood_shift: 2.0
+    ood_scale: 3.0
+    data_dist: "normal"
+    shuffle_samples: True

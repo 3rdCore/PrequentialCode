@@ -1,11 +1,28 @@
-from abc import abstractmethod
+from abc import ABC, abstractmethod
 from typing import Any, Iterable
 
 import torch
 from beartype import beartype
 from torch import Tensor
+from torchdata.datapipes.map import MapDataPipe
 
-from datasets.interfaces import TaskDistDataset
+
+class TaskDistDataset(ABC, MapDataPipe):
+    @abstractmethod
+    def __len__(self) -> int:
+        pass
+
+    @abstractmethod
+    def __getitem__(self, index: int) -> tuple[dict[str, Tensor], dict[str, Any] | None]:
+        """Get multiple samples from multiple tasks.
+
+        Args:
+            index (int): task index.
+
+        Returns:
+            tuple[dict[str, Tensor], dict[str, Any] | None]: data with shapes (samples, *shape), task parameters (optional).
+        """
+        pass
 
 
 class SyntheticDataset(TaskDistDataset):
@@ -50,4 +67,27 @@ class SyntheticDataset(TaskDistDataset):
         if self.shuffle_samples:
             shuffle_idx = torch.randperm(self.n_samples)
             data = {name: data[name][shuffle_idx] for name in data}
+        return data, task_params
+
+
+class AtomicSyntheticDataset:
+    @beartype
+    def __init__(
+        self,
+        multi_dataset: SyntheticDataset,
+    ):
+        self.multi_dataset = multi_dataset
+        self.current_task = 0
+        self.n_samples = multi_dataset.n_samples
+        self.n_tasks = multi_dataset.n_tasks
+
+    @beartype
+    def __len__(self) -> int:
+        return self.n_samples
+
+    @beartype
+    def __getitem__(self, index: int) -> tuple[dict[str, Tensor], dict[str, Any] | None]:
+        data, task_params = self.multi_dataset[self.current_task]
+        data = {name: data[name][index] for name in data}
+
         return data, task_params
