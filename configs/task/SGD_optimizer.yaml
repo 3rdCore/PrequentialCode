@@ -1,0 +1,31 @@
+#@package _global_
+task_name: "SGD_optimizer"
+datamodule:
+  _target_: datasets.interfaces.AtomicICLDataModule
+  batch_size: 32
+  dataset: ${dataset.train_dataset}
+
+trainer:
+  max_epochs: 100000
+  check_val_every_n_epoch : 1
+  log_every_n_steps : 1
+
+task:
+  _target_: tasks.sgd_optimizer.StandardOptimizerForRegression
+  inner_epochs: 100
+  predictor:
+    _target_: models.utils.MLP
+    h_dim: 256
+    n_layers: 2
+    in_features: ${datamodule.dataset.x_dim}
+    out_features: ${datamodule.dataset.y_dim}
+  min_train_samples: 1
+  lr: 1e-4
+  train_val_prop: 0.8
+  n_fit_total: 1000
+
+callbacks:
+  _target_: tasks.sgd_optimizer.CustomEarlyStopping
+  patience: 5
+  monitor: "val_loss"
+  min_delta: 0.0005
