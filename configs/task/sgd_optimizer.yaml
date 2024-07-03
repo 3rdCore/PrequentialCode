@@ -1,5 +1,6 @@
 #@package _global_
 task_name: "SGD_optimizer"
+
 datamodule:
   _target_: datasets.interfaces.AtomicICLDataModule
   batch_size: 32
