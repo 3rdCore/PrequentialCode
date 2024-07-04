@@ -1,5 +1,10 @@
 #@package _global_
+
 task_name: "sgd_optimizer"
+
+defaults:
+  - predictor: MLP
+  - _self_
 
 datamodule:
   _target_: datasets.interfaces.AtomicICLDataModule
@@ -14,12 +19,7 @@ trainer:
 task:
   _target_: tasks.sgd_optimizer.StandardOptimizerForRegression
   inner_epochs: 100
-  predictor:
-    _target_: models.utils.MLP
-    h_dim: 256
-    n_layers: 2
-    in_features: ${datamodule.dataset.x_dim}
-    out_features: ${datamodule.dataset.y_dim}
+  predictor: ${predictor}
   min_train_samples: 1
   lr: 1e-4
   train_val_prop: 0.8

@@ -1,8 +1,10 @@
 #@package _global_
 
 defaults:
+  - predictor: MLPLowRankPredictor
   - _self_
-  - predictor: MLPConcatPredictor
+
+
 task_name: "meta_optimizer"
 
 datamodule:

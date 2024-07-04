@@ -2,6 +2,7 @@ defaults:
   - hydra: default
   - dataset: null
   - task: null
+  - task/predictor: null
   - _self_
 
 save_dir: "logs/"
