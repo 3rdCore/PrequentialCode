@@ -1,10 +1,11 @@
 #@package _global_
 
-task_name: "sgd_optimizer"
 
 defaults:
   - predictor: MLP
   - _self_
+
+task_name: "sgd_optimizer"
 
 datamodule:
   _target_: datasets.interfaces.AtomicICLDataModule
