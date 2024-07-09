@@ -185,6 +185,7 @@ class SinusoidRegression(RegressionDataset):
         n_freq: int = 3,
         fixed_freq: bool = False,
     ):
+        assert y_dim == 1  # only 1D output supported for now
         self.n_freq = n_freq
         self.fixed_freq = fixed_freq
         if self.fixed_freq:
@@ -230,7 +231,7 @@ class SinusoidRegression(RegressionDataset):
         else:
             amplitudes, freq = w[..., : self.n_freq], w[..., self.n_freq :]
         x = torch.sin(x.unsqueeze(-1) * freq.unsqueeze(1))
-        y = (x * amplitudes.unsqueeze(1)).sum(dim=-1)
+        y = (x * amplitudes.unsqueeze(1)).sum(dim=-1).sum(dim=-1, keepdim=True)
         return y
 
 
