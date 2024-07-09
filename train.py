@@ -20,7 +20,7 @@ def train(cfg):
     # Add experiment metadata to the logger
     if logger:
         logger.experiment.config.update(OmegaConf.to_container(cfg.experiment, resolve=True))
-        logger.experiment.config.update(OmegaConf.to_container(cfg.seed, resolve=True))
+        logger.experiment.config.update({"seed": cfg.seed})
 
     trainer = Trainer(
         logger=logger,
