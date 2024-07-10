@@ -6,12 +6,11 @@ from torch.nn import functional as F
 
 
 class FastFoodUpsample(nn.Module):
-    def __init__(self, low_dim: int, param_dims: list[tuple[int, ...]]):
+    def __init__(self, low_dim: int, param_shape: tuple[int, ...]):
         super().__init__()
         self.low_dim = low_dim
-        self.param_dims = param_dims
-        self.param_block_dims = [np.prod(dim) for dim in param_dims]
-        self.total_dim = sum(self.param_block_dims)
+        self.param_shape = param_shape
+        self.total_dim = np.prod(self.param_shape)
 
         fastfood_vars = make_fastfood_vars(self.total_dim)
         for name, var in fastfood_vars.items():
@@ -29,8 +28,7 @@ class FastFoodUpsample(nn.Module):
             "LL": self.fastfood_LL,
         }
         delta = fastfood_torched_batched(z, self.total_dim, fastfood_var_dict)
-        delta = delta.split(self.param_block_dims, dim=1)
-        delta = [d.view(-1, *dim) for d, dim in zip(delta, self.param_dims)]
+        delta = delta.view(-1, *self.param_shape)
         return delta
 
 

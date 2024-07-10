@@ -216,11 +216,11 @@ class MLPLowRankPredictor(Predictor):
             + [nn.Linear(h_dim, h_dim) for _ in range(n_layers - 2)]
             + [nn.Linear(h_dim, y_dim)]
         )
-        param_dims = [(h_dim, x_dim), (h_dim,)]
+        param_shapes = [(h_dim, x_dim), (h_dim,)]
         for _ in range(n_layers - 2):
-            param_dims += [(h_dim, h_dim), (h_dim,)]
-        param_dims += [(y_dim, h_dim), (y_dim,)]
-        self.ff_upsample = FastFoodUpsample(z_dim, param_dims)
+            param_shapes += [(h_dim, h_dim), (h_dim,)]
+        param_shapes += [(y_dim, h_dim), (y_dim,)]
+        self.ff_upsample = nn.ModuleList([FastFoodUpsample(z_dim, ps) for ps in param_shapes])
 
     @beartype
     def forward(self, x: dict[str, Tensor], z: dict[str, Tensor]) -> dict[str, Tensor]:
@@ -238,7 +238,7 @@ class MLPLowRankPredictor(Predictor):
 
         seq, batch, _ = z.shape
         z = z.view(seq * batch, -1)
-        z = self.ff_upsample(z)
+        z = [upsample(z) for upsample in self.ff_upsample]
 
         for i in range(self.n_layers):
             w0 = self.params_0[i].weight
