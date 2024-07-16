@@ -234,11 +234,11 @@ class MLPLowRankPredictor(Predictor):
             dict[str, Tensor]: Predicted values for y output, with shape (samples, tasks, y_dim) at `y_key`.
         """
         x = x[self.x_key]
-        z = z[self.z_key]
+        z = z[self.z_key]  # (samples, tasks, z_dim)
 
         seq, batch, _ = z.shape
-        z = z.view(seq * batch, -1)
-        z = [upsample(z) for upsample in self.ff_upsample]
+        z = z.view(seq * batch, -1)  # (samples * tasks, z_dim)
+        z = self.ff_upsample(z)  # a list of 2*tensors per layer
 
         for i in range(self.n_layers):
             w0 = self.params_0[i].weight

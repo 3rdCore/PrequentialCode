@@ -1,0 +1,5 @@
+_target_: models.utils.MLP
+h_dim: 256
+n_layers: 2
+in_features: ${datamodule.dataset.x_dim}
+out_features: ${datamodule.dataset.y_dim}

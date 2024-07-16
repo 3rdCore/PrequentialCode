@@ -167,14 +167,14 @@ def fastfood_torched_batched(
 
 class MLP(nn.Module):
     @beartype
-    def __init__(self, in_features: int, hidden_size: int, n_layers: int, out_features: int):
+    def __init__(self, in_features: int, h_dim: int, n_layers: int, out_features: int):
         super().__init__()
         self.layers = nn.ModuleList()
         self.relu = nn.ReLU()
-        self.layers.append(nn.Linear(in_features, hidden_size))
+        self.layers.append(nn.Linear(in_features, h_dim))
         for i in range(n_layers - 2):
-            self.layers.append(nn.Linear(hidden_size, hidden_size))
-        self.layers.append(nn.Linear(hidden_size, out_features))
+            self.layers.append(nn.Linear(h_dim, h_dim))
+        self.layers.append(nn.Linear(h_dim, out_features))
         # Store initial weights and biases
         self.initial_weights = [layer.weight.clone().detach() for layer in self.layers]
         self.initial_biases = [layer.bias.clone().detach() for layer in self.layers]

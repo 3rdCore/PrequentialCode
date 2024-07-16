@@ -25,7 +25,7 @@ class StandardOptimizerForRegression(LightningModule):
     def __init__(
         self,
         inner_epochs: int,
-        model: Module,
+        predictor: Module,
         lr: float = 1e-4,
         min_train_samples: int = 1,
         train_val_prop: float = 0.8,
@@ -34,15 +34,15 @@ class StandardOptimizerForRegression(LightningModule):
         n_fit_total=1000,
     ):
         super().__init__()
-        self.save_hyperparameters(ignore=["model", "optimizer", "loss_fn"])
+        self.save_hyperparameters(ignore=["optimizer", "loss_fn"])
         self.current_inner_epochs = 0
-        self.model = model
+        self.predictor = predictor
         self.loss_fn = loss_fn
         self.current_n_fit = 0
 
     @beartype
     def forward(self, x: Tensor) -> Tensor:
-        return self.model(x)
+        return self.predictor(x)
 
     @beartype
     def training_step(self, data, batch_idx) -> Tensor:
@@ -86,7 +86,7 @@ class StandardOptimizerForRegression(LightningModule):
     @torch.no_grad()
     def on_atomic_fit_end(self) -> None:
         """
-        Log training and evaluation loss, sample a new dataset, reset model, optimizers, delete stored metrics.
+        Log training and evaluation loss, sample a new dataset, reset predictor, optimizers, delete stored metrics.
 
         Warning, this is not a standard callback. I won't be called anywhere in the code of lightning package.
         """
@@ -96,7 +96,7 @@ class StandardOptimizerForRegression(LightningModule):
 
         self.current_n_fit += 1
         self.current_inner_epochs = 0
-        self.model.weight_init()
+        self.predictor.weight_init()
         self.trainer.optimizers = [self.configure_optimizers()]
         del self.trainer.callback_metrics["train_loss"]
         del self.trainer.callback_metrics["val_loss"]
@@ -106,32 +106,45 @@ class StandardOptimizerForRegression(LightningModule):
     def log_loss_vs_nsamples(self) -> None:
         if self.logger is None:
             return
-        loss_train, loss_eval = 0, 0
+        loss_train, loss_eval, loss_ood = 0, 0, 0
         total_train_samples, total_eval_samples = 0, 0
         dl = self.trainer.datamodule.train_dataloader()
         for data, _ in dl:
-            x, y = data["x"].to(self.device), data[self.hparams.y_key].to(self.device)
-            preds = self.forward(x)
-            loss = self.loss_fn(y, preds)
+            x, y, x_ood, y_ood = (
+                data["x"].to(self.device),
+                data[self.hparams.y_key].to(self.device),
+                data["x_ood"].to(self.device),
+                data[f"{self.hparams.y_key}_ood"].to(self.device),
+            )
+            preds, preds_ood = self.forward(x), self.forward(x_ood)
+            loss, loss_ood = self.loss_fn(y, preds), self.loss_fn(y_ood, preds_ood)
             loss_train += loss.item() * x.size(0)
+            loss_ood += loss_ood.item() * x_ood.size(0)
             total_train_samples += x.size(0)
 
         l_train_i = loss_train / total_train_samples
 
         dl = self.trainer.datamodule.val_dataloader()
         for data, _ in dl:
-            x, y = data["x"].to(self.device), data[self.hparams.y_key].to(self.device)
-            preds = self.forward(x)
-            loss = self.loss_fn(y, preds)
+            x, y, x_ood, y_ood = (
+                data["x"].to(self.device),
+                data[self.hparams.y_key].to(self.device),
+                data["x_ood"].to(self.device),
+                data[f"{self.hparams.y_key}_ood"].to(self.device),
+            )
+            preds, preds_ood = self.forward(x), self.forward(x_ood)
+            loss, loss_ood = self.loss_fn(y, preds), self.loss_fn(y_ood, preds_ood)
             loss_eval += loss.item() * x.size(0)
+            loss_ood += loss_ood.item() * x_ood.size(0)
             total_eval_samples += x.size(0)
         l_nexttoken_i = loss_eval / total_eval_samples
-
+        loss_ood_i = loss_ood / (total_train_samples + total_eval_samples)
         self.logger.experiment.log(
             {
                 "n_samples": total_train_samples,
-                "/n_sample_loss_train": l_train_i,
-                "/n_sample_loss_nexttoken": l_nexttoken_i,
+                "val_tasks/n_sample_loss_train": l_train_i,
+                "val_tasks/n_sample_loss_nexttoken": l_nexttoken_i,
+                "val_tasks/n_sample_loss_ood": loss_ood_i,
             }
         )
 
@@ -178,7 +191,7 @@ class CustomEarlyStopping(EarlyStopping):
 
     @beartype
     def on_validation_end(self, trainer: Trainer, pl_module: LightningModule) -> None:
-        """Call EarlyStop Callback and check if the model should stop training at the end of the validation loop.
+        """Call EarlyStop Callback and check if the predictor should stop training at the end of the validation loop.
         Args:
             trainer: the lightning trainer
             pl_module: the lightning module being trained

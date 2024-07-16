@@ -141,32 +141,40 @@ class MetaOptimizer(ABC, LightningModule):
                 preds_nexttoken,
                 x_train,
                 x_nexttoken,
-                _,
+                z,
             ) = self.forward(x)
             loss_train = self.loss_function(x_train, preds_train)
             loss_nexttoken = self.loss_function(x_nexttoken, preds_nexttoken)
+            x_ood = {name: x_nexttoken[f"{name}_ood"].to(self.device) for name in ["x", "y"]}
+            preds_ood = self.predictor.forward(x_ood, z)
+            loss_ood = self.loss_function(x_ood, preds_ood)
 
-            loss_train, loss_nexttoken = (
+            loss_train, loss_nexttoken, loss_ood = (
                 loss_train.sum(dim=-1) / num_tasks,
                 loss_nexttoken.sum(dim=-1) / num_tasks,
+                loss_ood.sum(dim=-1) / num_tasks,
             )
 
             if n_sample_loss_train is None:
                 n_sample_loss_train = loss_train
                 n_sample_loss_nexttoken = loss_nexttoken
+                n_sample_loss_ood = loss_ood
             else:
                 n_sample_loss_train += loss_train
                 n_sample_loss_nexttoken += loss_nexttoken
+                n_sample_loss_ood += loss_ood
 
         for i in range(len(n_sample_loss_train)):
             n_samples = i + self.hparams.min_train_samples
             l_train_i = n_sample_loss_train[i].cpu()
             l_nexttoken_i = n_sample_loss_nexttoken[i].cpu()
+            l_ood_i = n_sample_loss_ood[i].cpu()
             self.logger.experiment.log(
                 {
                     "n_samples": n_samples,
                     f"{mode}/n_sample_loss_train": l_train_i,
                     f"{mode}/n_sample_loss_nexttoken": l_nexttoken_i,
+                    f"{mode}/n_sample_loss_ood": l_ood_i,
                 }
             )
 
