@@ -1,0 +1,14 @@
+defaults:
+  - submitit_slurm
+
+partition: long
+cpus_per_task: 3
+gres: gpu:1
+tasks_per_node: 1
+mem_gb: 32
+timeout_min: 1440  # 24 hours
+array_parallelism: 100
+
+setup:
+  - "module --quiet load anaconda/3"
+  - "conda activate preq_code"

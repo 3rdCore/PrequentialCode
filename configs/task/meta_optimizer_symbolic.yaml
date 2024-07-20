@@ -1,0 +1,33 @@
+#@package _global_
+
+defaults:
+  - predictor: MLPConcatPredictor
+  - _self_
+
+
+task_name: "meta_optimizer"
+
+datamodule:
+  _target_: datasets.interfaces.ICLDataModule
+  batch_size: 256
+  train_dataset: ${dataset.train_dataset}
+  val_dataset: ${dataset.val_dataset}
+
+trainer:
+  max_epochs: 50
+
+callbacks:
+
+task:
+  _target_: tasks.meta_optimizer_symbolic.MetaOptimizerForSymbolic
+  meta_objective: prequential
+  min_train_samples: 1
+  lr: 1e-4
+  context_aggregator:
+    _target_: models.context_aggregator.Transfoptimizer
+    x_dim: ${ast_eval:'${datamodule.train_dataset.x_dim} + ${datamodule.train_dataset.y_dim}'}
+    z_dim: 128
+    h_dim: 256
+    n_layers: 4
+    n_heads: 4
+  predictor: ${predictor}

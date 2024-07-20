@@ -1,0 +1,22 @@
+name: "arc_symbolic"
+
+train_dataset:
+  _target_: datasets.symbolic.ARCDataset
+  x_dim: 360
+  y_dim: 360
+  n_colors: 10
+  n_tasks: 1000
+  n_samples: 1000
+  has_ood: False
+  ood_style: "random"
+  shuffle_samples: True
+val_dataset:
+  _target_: datasets.symbolic.ARCDataset
+  x_dim: ${dataset.train_dataset.x_dim}
+  y_dim: ${dataset.train_dataset.y_dim}
+  n_colors: ${dataset.train_dataset.n_colors}
+  n_tasks: 100
+  n_samples: ${dataset.train_dataset.n_samples}
+  has_ood: ${dataset.train_dataset.has_ood}
+  ood_style: ${dataset.train_dataset.ood_style}
+  shuffle_samples: ${dataset.train_dataset.shuffle_samples}

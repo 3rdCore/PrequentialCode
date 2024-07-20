@@ -21,6 +21,7 @@ val_dataset:
   n_samples: ${dataset.train_dataset.n_samples}
   noise: ${dataset.train_dataset.noise}
   has_ood: ${dataset.train_dataset.has_ood}
+  ood_style: ${dataset.train_dataset.ood_style}
   ood_shift: ${dataset.train_dataset.ood_shift}
   ood_scale: ${dataset.train_dataset.ood_scale}
   data_dist: ${dataset.train_dataset.data_dist}
