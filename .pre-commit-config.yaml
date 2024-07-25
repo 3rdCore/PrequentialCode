@@ -1,4 +1,4 @@
-exclude: \.ipynb$
+exclude: '\.ipynb$|\.key'
 
 default_language_version:
   python: python3.11
