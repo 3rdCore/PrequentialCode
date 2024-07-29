@@ -1,22 +1,24 @@
 name: "arc_symbolic"
 
 train_dataset:
-  _target_: datasets.symbolic.ARCDataset
+  _target_: datasets.symbolic.ARCSymbolic
   x_dim: 360
   y_dim: 360
   n_colors: 10
-  n_tasks: 1000
+  n_tasks: 10000
   n_samples: 1000
+  data_path: "/home/mila/t/tejas.kasetty/scratch/prequential_icl/data/xarcp_train_0"
   has_ood: False
   ood_style: "random"
   shuffle_samples: True
 val_dataset:
-  _target_: datasets.symbolic.ARCDataset
+  _target_: datasets.symbolic.ARCSymbolic
   x_dim: ${dataset.train_dataset.x_dim}
   y_dim: ${dataset.train_dataset.y_dim}
-  n_colors: ${dataset.train_dataset.n_colors}
   n_tasks: 100
   n_samples: ${dataset.train_dataset.n_samples}
+  n_colors: ${dataset.train_dataset.n_colors}
+  data_path: "/home/mila/t/tejas.kasetty/scratch/prequential_icl/data/xarcp_val_0"
   has_ood: ${dataset.train_dataset.has_ood}
   ood_style: ${dataset.train_dataset.ood_style}
   shuffle_samples: ${dataset.train_dataset.shuffle_samples}
