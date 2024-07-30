@@ -1,7 +1,7 @@
 import numpy as np
 import torch
 from beartype import beartype
-from torch import nn
+from torch import Tensor, nn
 from torch.nn import functional as F
 
 
@@ -191,3 +191,27 @@ class MLP(nn.Module):
         for i, layer in enumerate(self.layers):
             layer.weight.data = self.initial_weights[i].clone().detach().to(layer.weight.device)
             layer.bias.data = self.initial_biases[i].clone().detach().to(layer.bias.device)
+
+
+class CNNModule(nn.Module):
+    @beartype
+    def __init__(self, in_channels: int, out_channels: int, stride: int):
+        super().__init__()
+        self.in_channels = in_channels
+        self.conv1 = nn.Conv2d(in_channels, out_channels=32, kernel_size=3, stride=stride, padding=1)
+        self.pool1 = nn.MaxPool2d(kernel_size=2, stride=2)
+        self.bn1 = nn.BatchNorm2d(32)
+        self.conv2 = nn.Conv2d(32, out_channels, kernel_size=3, stride=stride, padding=1)
+        self.pool2 = nn.MaxPool2d(kernel_size=2, stride=2)
+        self.bn2 = nn.BatchNorm2d(out_channels)
+        self.flatten = nn.Flatten()
+
+    def forward(self, x: Tensor) -> Tensor:
+        shape = x.shape[:2]
+        x = F.one_hot(x, self.in_channels).float().flatten(end_dim=1).permute((0, 3, 1, 2))
+        x = F.relu(self.bn1(self.conv1(x)))
+        x = self.pool1(x)
+        x = F.relu(self.bn2(self.conv2(x)))
+        x = self.pool2(x)
+        x = self.flatten(x)
+        return x.view(*shape, -1)

@@ -4,6 +4,8 @@ import torch
 from beartype import beartype
 from torch import Tensor, nn
 
+from models.utils import CNNModule
+
 
 class ContextAggregator(ABC, nn.Module):
     @abstractmethod
@@ -38,7 +40,7 @@ class Transfoptimizer(ContextAggregator):
         h_dim: int,
         n_layers: int,
         n_heads: int,
-        x_keys: tuple[str] = ("x", "y"),
+        x_keys: tuple[str, str] = ("x", "y"),
         mlp_dim: int | None = None,
         layer_norm_eps: float = 1e-5,
         dropout: float = 0.0,
@@ -48,7 +50,6 @@ class Transfoptimizer(ContextAggregator):
         self.x_dim = x_dim
         self.z_dim = z_dim
         self.x_keys = x_keys
-
         self.x_embedding = nn.Linear(x_dim, h_dim)
         self.x0_embedding = nn.Parameter(torch.zeros(1, 1, h_dim))
         self.context_encoder = nn.TransformerEncoder(
@@ -90,3 +91,28 @@ class Transfoptimizer(ContextAggregator):
     @beartype
     def z_shape(self) -> dict[str, int]:
         return {"z": self.z_dim}
+
+
+class VTOptimizer(Transfoptimizer):
+    @beartype
+    def __init__(
+        self,
+        x_dim: int,  # number of total features in the input
+        z_dim: int,  # number of features in the output
+        h_dim: int,
+        n_layers: int,
+        n_heads: int,
+        feature_map: CNNModule,
+        x_keys: tuple[str, str] = ("x", "y"),
+        mlp_dim: int | None = None,
+        layer_norm_eps: float = 1e-5,
+        dropout: float = 0.0,
+    ) -> None:
+
+        super().__init__(x_dim, z_dim, h_dim, n_layers, n_heads, x_keys, mlp_dim, layer_norm_eps, dropout)
+        self.feature_map = feature_map
+
+    @beartype
+    def forward(self, x: dict[str, Tensor]) -> dict[str, Tensor]:
+        x = {name: self.feature_map(x[name]) for name in self.x_keys}
+        return super().forward(x)

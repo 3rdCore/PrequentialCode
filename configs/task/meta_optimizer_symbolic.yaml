@@ -2,6 +2,7 @@
 
 defaults:
   - predictor: MLPConcatPredictor
+  - context_aggregator: Transfoptimizer
   - _self_
 
 
@@ -19,15 +20,9 @@ trainer:
 callbacks:
 
 task:
-  _target_: tasks.meta_optimizer_symbolic.MetaOptimizerForSymbolic
+  _target_: tasks.meta_optimizer_symbolic.MetaOptimizerForSymbolic2D
   meta_objective: prequential
   min_train_samples: 1
   lr: 1e-4
-  context_aggregator:
-    _target_: models.context_aggregator.Transfoptimizer
-    x_dim: ${ast_eval:'${datamodule.train_dataset.x_dim} + ${datamodule.train_dataset.y_dim}'}
-    z_dim: 128
-    h_dim: 256
-    n_layers: 4
-    n_heads: 4
+  context_aggregator: ${context_aggregator}
   predictor: ${predictor}

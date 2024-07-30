@@ -1,0 +1,6 @@
+_target_: models.predictor.CNNConcatPredictor
+x_dim: ${task.context_aggregator.feature_map.out_channels}
+z_dim: ${task.context_aggregator.z_dim}
+y_dim: ${datamodule.train_dataset.y_dim}
+h_dim: 256
+n_layers: 5

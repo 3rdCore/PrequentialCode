@@ -5,7 +5,7 @@ from beartype import beartype
 from torch import Tensor, nn
 from torch.nn import functional as F
 
-from models.utils import FastFoodUpsample
+from models.utils import CNNModule, FastFoodUpsample
 
 
 class Predictor(ABC, nn.Module):
@@ -253,3 +253,27 @@ class MLPLowRankPredictor(Predictor):
                 x = F.relu(x)
 
         return {self.y_key: x}
+
+
+class CNNConcatPredictor(MLPConcatPredictor):
+    @beartype
+    def __init__(
+        self,
+        x_dim: int,
+        z_dim: int,
+        y_dim: int,
+        h_dim: int,
+        n_layers: int,
+        feature_map: CNNModule | None = None,
+        x_keys: tuple[str] = ("x",),
+        z_keys: tuple[str] = ("z",),
+        y_key: str = "y",
+    ) -> None:
+        super().__init__(x_dim, z_dim, y_dim, h_dim, n_layers, x_keys, z_keys, y_key)
+        self.feature_map = feature_map
+
+    @beartype
+    def forward(self, x: dict[str, Tensor], z: dict[str, Tensor]) -> dict[str, Tensor]:
+        with torch.inference_mode():
+            x = {key: self.feature_map(x[key]) for key in self.x_keys}
+        return super().forward(x, z)

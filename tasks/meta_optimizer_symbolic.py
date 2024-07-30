@@ -6,6 +6,7 @@ import torch
 from matplotlib import pyplot as plt
 from torch import Tensor
 from torch.nn import CrossEntropyLoss
+from torch.nn import functional as F
 from torch.nn.modules.loss import _Loss
 from torch.utils.data import DataLoader
 
@@ -43,3 +44,24 @@ class MetaOptimizerForSymbolic(MetaOptimizer):
         y_true = target["y"].view(-1, n_colors)
         y_pred = preds["y"].view(-1, n_colors)
         return self.loss_fn(y_pred, y_true).view(*target["x"].shape[:2], -1).mean(dim=-1)
+
+
+class MetaOptimizerForSymbolic2D(MetaOptimizerForSymbolic):
+    def __init__(
+        self,
+        meta_objective: MetaOptimizer.MetaObjective,
+        context_aggregator: ContextAggregator,
+        predictor: Predictor,
+        min_train_samples: int = 1,
+        lr: float = 1e-3,
+        loss_fn: _Loss = CrossEntropyLoss(reduction="none"),
+    ):
+        super().__init__(meta_objective, context_aggregator, predictor, min_train_samples, lr, loss_fn)
+        self.predictor.feature_map = self.context_aggregator.feature_map
+
+    def loss_function(self, target: dict[str, Tensor], preds: dict[str, Tensor]) -> Tensor:
+        n_colors = self.trainer.datamodule.train_dataset.n_colors
+        target["y"] = (
+            F.one_hot(target["y"].to(torch.int64), num_classes=n_colors).flatten(start_dim=-3).float()
+        )
+        return super().loss_function(target, preds)
