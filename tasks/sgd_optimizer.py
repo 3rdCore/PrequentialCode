@@ -141,7 +141,7 @@ class StandardOptimizerForRegression(LightningModule):
         loss_ood_i = loss_ood / (total_train_samples + total_eval_samples)
         self.logger.experiment.log(
             {
-                "n_samples": total_train_samples,
+                "n_samples": total_train_samples + total_eval_samples,
                 "val_tasks/n_sample_loss_train": l_train_i,
                 "val_tasks/n_sample_loss_nexttoken": l_nexttoken_i,
                 "val_tasks/n_sample_loss_ood": loss_ood_i,
