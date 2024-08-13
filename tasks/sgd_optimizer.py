@@ -117,12 +117,10 @@ class StandardOptimizerForRegression(LightningModule):
                 data[f"{self.hparams.y_key}_ood"].to(self.device),
             )
             preds, preds_ood = self.forward(x), self.forward(x_ood)
-            loss, loss_ood = self.loss_fn(y, preds), self.loss_fn(y_ood, preds_ood)
-            loss_train += loss.item() * x.size(0)
-            loss_ood += loss_ood.item() * x_ood.size(0)
+            l, l_ood = self.loss_fn(y, preds), self.loss_fn(y_ood, preds_ood)
+            loss_train += l.item() * x.size(0)
+            loss_ood += l_ood.item() * x_ood.size(0)
             total_train_samples += x.size(0)
-
-        l_train_i = loss_train / total_train_samples
 
         dl = self.trainer.datamodule.val_dataloader()
         for data, _ in dl:
@@ -133,10 +131,12 @@ class StandardOptimizerForRegression(LightningModule):
                 data[f"{self.hparams.y_key}_ood"].to(self.device),
             )
             preds, preds_ood = self.forward(x), self.forward(x_ood)
-            loss, loss_ood = self.loss_fn(y, preds), self.loss_fn(y_ood, preds_ood)
-            loss_eval += loss.item() * x.size(0)
-            loss_ood += loss_ood.item() * x_ood.size(0)
+            l, l_ood = self.loss_fn(y, preds), self.loss_fn(y_ood, preds_ood)
+            loss_eval += l.item() * x.size(0)
+            loss_ood += l_ood.item() * x_ood.size(0)
             total_eval_samples += x.size(0)
+
+        l_train_i = loss_train / total_train_samples
         l_nexttoken_i = loss_eval / total_eval_samples
         loss_ood_i = loss_ood / (total_train_samples + total_eval_samples)
         self.logger.experiment.log(
