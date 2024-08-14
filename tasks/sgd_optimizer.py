@@ -158,8 +158,6 @@ class StandardOptimizerForRegression(LightningModule):
         trainer.datamodule.switch_task(n_samples=n_samples)
         batch_size = self.trainer.datamodule.hparams["batch_size"]
 
-        self.trainer.val_check_batch = math.ceil(len(self.trainer.datamodule.train_dataset) / batch_size)
-
 
 class CustomEarlyStopping(EarlyStopping):
     @beartype
