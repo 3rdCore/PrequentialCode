@@ -98,10 +98,10 @@ class MetaOptimizerForRegression(MetaOptimizer):
         self,
         mode: Literal["train_tasks", "val_tasks"],
         n_probe_tasks: int = 4,
-        n_context_points: tuple[int] = (1, 4, 10, 50),
+        n_context_points: tuple[int] | None = (1, 4, 10, 50),
         resolution: int = 100,
     ) -> None:
-        if self.logger is None:
+        if self.logger is None or n_context_points is None:
             return
 
         # Get the dataset
