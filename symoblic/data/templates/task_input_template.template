@@ -1,0 +1,21 @@
+
+{task_context}
+
+#### Now it's your turn!
+
+**Input Grid:**
+```
+{query_input_grid}
+```
+Based on the input grid, which of the following is the correct output grid?
+
+**Options:**
+
+{options}
+
+Choose the option that best represents the output grid based on the given input grid and patterns you have observed in the examples.
+1)
+2)
+3)
+4)
+5)
