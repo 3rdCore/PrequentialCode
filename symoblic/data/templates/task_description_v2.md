@@ -39,6 +39,4 @@ J I H G F E
 A B C D E F
 ```
 
-You will be provided with 5 options for the output grid. Only one of these 5 options - [ 0, 1, 2, 3, 4] will be the correct output grid for the respective input grid. You need to provide the option number in an <answer> tag in the following manner:
-<answer>1</answer>
-and nothing else.
+You will be provided with 5 options for the output grid. Only one of these 5 options - [ 0, 1, 2, 3, 4] will be the correct output grid for the respective input grid. You need to provide just the option number and nothing else.
