@@ -9,6 +9,7 @@ from torch import Tensor
 
 from models.context_aggregator import ContextAggregator
 from models.predictor import Predictor
+from utils.functions import torch_pca
 
 
 class MetaOptimizer(ABC, LightningModule):
@@ -120,6 +121,8 @@ class MetaOptimizer(ABC, LightningModule):
     def on_train_end(self):
         self.log_loss_vs_nsamples(mode="train_tasks")
         self.log_loss_vs_nsamples(mode="val_tasks")
+        self.log_effective_zdim(mode="train_tasks")
+        self.log_effective_zdim(mode="val_tasks")
 
     @torch.inference_mode()
     def log_loss_vs_nsamples(self, mode: Literal["train_tasks", "val_tasks"]):
@@ -177,6 +180,36 @@ class MetaOptimizer(ABC, LightningModule):
                     f"{mode}/n_sample_loss_ood": l_ood_i,
                 }
             )
+
+    @torch.inference_mode()
+    def log_effective_zdim(self, mode: Literal["train_tasks", "val_tasks"]):
+        # Get the dataloader
+        if mode == "train_tasks":
+            dl = self.trainer.datamodule.train_dataloader()
+        else:
+            dl = self.trainer.datamodule.val_dataloader()
+
+        # Collect the matrix of z's
+        zs = None
+        for x, _ in dl:
+            x = {name: x[name].to(self.device) for name in x}
+            z = self.context_aggregator.forward(x)
+            if len(z) > 1 or "z" not in z or len(z["z"].shape) != 3:
+                return  # This function only makes sense for a single z vector
+            z = z["z"].cpu()
+            z = z[torch.randperm(len(z))[:10]]  # Randomly sample 10 z's to limit RAM
+            z = z.view(-1, z.shape[-1])
+            if zs is None:
+                zs = z
+            else:
+                zs = torch.cat([zs, z], dim=0)
+            if len(zs) > 10000:  # Maximum 10000 z's to limit RAM
+                break
+
+        # Compute and log the effective dimensionality of the z's
+        _, variance_explained = torch_pca(zs, center=True, percent=True)
+        effdim = (variance_explained.sum() ** 2) / (variance_explained**2).sum()
+        self.log(f"{mode}/effective_zdim", effdim)
 
     @beartype
     def losses_and_metrics(
