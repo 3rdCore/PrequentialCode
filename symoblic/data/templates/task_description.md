@@ -18,7 +18,7 @@ The grid uses the following color codes, represented by capital letters:
 - **J**: Black
 
 
-#### Example representation of input and output grid:
+#### Toy example representation of input and output grid:
 
 **Input Grid:**
 ```
