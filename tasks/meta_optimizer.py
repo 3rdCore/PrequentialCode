@@ -212,7 +212,7 @@ class MetaOptimizer(ABC, LightningModule):
         # Compute and log the effective dimensionality of the z's
         _, variance_explained = torch_pca(zs, center=True, percent=True)
         effdim = (variance_explained.sum() ** 2) / (variance_explained**2).sum()
-        self.log(f"{mode}/effective_zdim", effdim)
+        self.logger.experiment.log({f"{mode}/effective_z-dim": effdim})
 
     @beartype
     def losses_and_metrics(
