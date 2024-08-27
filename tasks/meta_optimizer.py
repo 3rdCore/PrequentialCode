@@ -23,6 +23,7 @@ class MetaOptimizer(ABC, LightningModule):
         predictor: Predictor,
         min_train_samples: int = 1,
         lr: float = 1e-4,
+        log_eff_zdim: bool = False,
     ):
         super().__init__()
         self.save_hyperparameters(ignore=["context_aggregator", "predictor"])
@@ -121,8 +122,9 @@ class MetaOptimizer(ABC, LightningModule):
     def on_train_end(self):
         self.log_loss_vs_nsamples(mode="train_tasks")
         self.log_loss_vs_nsamples(mode="val_tasks")
-        self.log_effective_zdim(mode="train_tasks")
-        self.log_effective_zdim(mode="val_tasks")
+        if self.hparams.log_eff_zdim:
+            self.log_effective_zdim(mode="train_tasks")
+            self.log_effective_zdim(mode="val_tasks")
 
     @torch.inference_mode()
     def log_loss_vs_nsamples(self, mode: Literal["train_tasks", "val_tasks"]):
