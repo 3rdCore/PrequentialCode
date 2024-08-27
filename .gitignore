@@ -161,5 +161,7 @@ wandb
 papers/preprint/data/*
 log.txt
 
+keys/
+results/
 # Keep
 !.gitkeep

@@ -1,0 +1,1201 @@
+|context|query
+0|"2 0 4 2
+0 2
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+2 0 4 2
+"
+1|"0 0 1 4
+0 3
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+0 0 1 4
+"
+2|"4 1 1 1
+0 1
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+4 1 1 1
+"
+3|"4 4 1 1
+0 1
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+4 4 1 1
+"
+4|"0 0 3 4
+0 2
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+0 0 3 4
+"
+5|"3 2 0 2
+2 2
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+3 2 0 2
+"
+6|"1 0 2 0
+2 4
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+1 0 2 0
+"
+7|"4 2 0 1
+2 3
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+4 2 0 1
+"
+8|"2 3 0 3
+1 2
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+2 3 0 3
+"
+9|"1 3 1 0
+2 2
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+1 3 1 0
+"
+10|"0 1 3 4
+0 2
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+0 1 3 4
+"
+11|"2 0 0 3
+1 3
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+2 0 0 3
+"
+12|"1 0 3 0
+2 3
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+1 0 3 0
+"
+13|"0 1 0 4
+1 3
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+0 1 0 4
+"
+14|"3 2 4 4
+1 1
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+3 2 4 4
+"
+15|"0 3 4 0
+1 2
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+0 3 4 0
+"
+16|"0 4 4 2
+0 2
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+0 4 4 2
+"
+17|"1 2 0 2
+3 3
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+1 2 0 2
+"
+18|"4 3 4 3
+0 0
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+4 3 4 3
+"
+19|"1 2 0 0
+4 4
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+1 2 0 0
+"
+20|"1 2 3 1
+2 2
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+1 2 3 1
+"
+21|"0 4 1 4
+0 2
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+0 4 1 4
+"
+22|"2 2 3 0
+2 2
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+2 2 3 0
+"
+23|"0 4 4 2
+0 2
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+0 4 4 2
+"
+24|"3 2 4 4
+1 1
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+3 2 4 4
+"
+25|"3 3 1 0
+1 2
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+3 3 1 0
+"
+26|"3 1 2 4
+0 2
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+3 1 2 4
+"
+27|"3 0 4 4
+0 1
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+3 0 4 4
+"
+28|"2 4 4 1
+0 2
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+2 4 4 1
+"
+29|"4 3 4 2
+0 1
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+4 3 4 2
+"
+30|"1 2 1 4
+2 2
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+1 2 1 4
+"
+31|"0 0 1 1
+0 3
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+0 0 1 1
+"
+32|"1 1 2 2
+1 2
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+1 1 2 2
+"
+33|"0 3 0 1
+1 3
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+0 3 0 1
+"
+34|"4 4 2 2
+0 1
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+4 4 2 2
+"
+35|"0 0 2 0
+1 3
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+0 0 2 0
+"
+36|"2 3 3 2
+0 1
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+2 3 3 2
+"
+37|"0 0 3 3
+0 2
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+0 0 3 3
+"
+38|"0 1 1 0
+1 3
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+0 1 1 0
+"
+39|"4 1 1 4
+0 1
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+4 1 1 4
+"
+40|"1 2 3 2
+2 2
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+1 2 3 2
+"
+41|"1 2 3 4
+2 2
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+1 2 3 4
+"
+42|"0 2 2 3
+1 2
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+0 2 2 3
+"
+43|"2 2 2 3
+1 1
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+2 2 2 3
+"
+44|"3 0 1 4
+0 2
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+3 0 1 4
+"
+45|"3 3 2 1
+0 2
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+3 3 2 1
+"
+46|"0 0 1 4
+0 3
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+0 0 1 4
+"
+47|"0 3 2 2
+0 2
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+0 3 2 2
+"
+48|"4 4 1 0
+1 2
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+4 4 1 0
+"
+49|"3 4 2 0
+1 2
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+3 4 2 0
+"
+50|"0 2 4 1
+1 3
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+0 2 4 1
+"
+51|"4 0 4 2
+0 2
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+4 0 4 2
+"
+52|"2 4 0 0
+2 3
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+2 4 0 0
+"
+53|"2 2 1 3
+1 2
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+2 2 1 3
+"
+54|"4 1 4 1
+0 1
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+4 1 4 1
+"
+55|"1 2 3 3
+2 2
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+1 2 3 3
+"
+56|"1 3 1 4
+1 1
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+1 3 1 4
+"
+57|"0 0 3 1
+0 3
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+0 0 3 1
+"
+58|"3 4 3 3
+0 0
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+3 4 3 3
+"
+59|"4 2 1 1
+1 2
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+4 2 1 1
+"
+60|"2 1 3 1
+0 2
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+2 1 3 1
+"
+61|"3 1 1 4
+0 1
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+3 1 1 4
+"
+62|"3 4 2 2
+0 1
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+3 4 2 2
+"
+63|"1 1 4 4
+1 1
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+1 1 4 4
+"
+64|"0 3 1 2
+0 3
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+0 3 1 2
+"
+65|"2 1 4 1
+0 2
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+2 1 4 1
+"
+66|"4 3 1 1
+0 1
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+4 3 1 1
+"
+67|"2 4 0 1
+1 3
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+2 4 0 1
+"
+68|"0 2 3 2
+1 2
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+0 2 3 2
+"
+69|"3 1 3 3
+0 1
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+3 1 3 3
+"
+70|"2 4 4 2
+0 1
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+2 4 4 2
+"
+71|"3 3 0 1
+1 2
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+3 3 0 1
+"
+72|"3 3 0 0
+2 2
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+3 3 0 0
+"
+73|"3 4 0 1
+1 2
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+3 4 0 1
+"
+74|"1 3 3 4
+1 1
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+1 3 3 4
+"
+75|"3 0 0 1
+1 3
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+3 0 0 1
+"
+76|"1 4 3 0
+2 2
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+1 4 3 0
+"
+77|"1 2 2 2
+2 2
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+1 2 2 2
+"
+78|"3 0 0 3
+1 2
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+3 0 0 3
+"
+79|"1 2 1 3
+2 2
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+1 2 1 3
+"
+80|"3 0 1 4
+0 2
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+3 0 1 4
+"
+81|"4 1 4 1
+0 1
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+4 1 4 1
+"
+82|"4 0 0 4
+1 2
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+4 0 0 4
+"
+83|"3 1 2 3
+0 2
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+3 1 2 3
+"
+84|"4 2 4 0
+2 2
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+4 2 4 0
+"
+85|"3 1 3 1
+0 1
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+3 1 3 1
+"
+86|"1 4 1 4
+1 1
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+1 4 1 4
+"
+87|"3 3 0 0
+2 2
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+3 3 0 0
+"
+88|"4 3 0 4
+1 1
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+4 3 0 4
+"
+89|"2 1 2 2
+0 2
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+2 1 2 2
+"
+90|"3 3 2 3
+0 1
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+3 3 2 3
+"
+91|"2 0 2 1
+0 3
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+2 0 2 1
+"
+92|"0 3 2 0
+1 3
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+0 3 2 0
+"
+93|"0 0 2 1
+0 4
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+0 0 2 1
+"
+94|"2 0 2 1
+0 3
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+2 0 2 1
+"
+95|"2 2 0 0
+3 3
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+2 2 0 0
+"
+96|"1 2 3 0
+3 3
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+1 2 3 0
+"
+97|"4 3 1 2
+0 2
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+4 3 1 2
+"
+98|"2 1 3 4
+0 2
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+2 1 3 4
+"
+99|"4 3 3 2
+0 1
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+4 3 3 2
+"
+100|"0 4 4 4
+0 1
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+0 4 4 4
+"
+101|"3 3 0 4
+1 1
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+3 3 0 4
+"
+102|"1 3 3 1
+1 1
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+1 3 3 1
+"
+103|"3 2 0 2
+2 2
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+3 2 0 2
+"
+104|"2 4 3 0
+1 2
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+2 4 3 0
+"
+105|"1 0 4 3
+1 2
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+1 0 4 3
+"
+106|"0 1 2 2
+0 3
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+0 1 2 2
+"
+107|"4 1 2 2
+0 2
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+4 1 2 2
+"
+108|"4 1 0 4
+1 2
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+4 1 0 4
+"
+109|"1 4 2 3
+1 2
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+1 4 2 3
+"
+110|"0 0 4 0
+1 2
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+0 0 4 0
+"
+111|"4 4 0 4
+1 1
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+4 4 0 4
+"
+112|"3 2 2 3
+1 1
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+3 2 2 3
+"
+113|"2 3 4 2
+0 1
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+2 3 4 2
+"
+114|"4 4 3 1
+0 1
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+4 4 3 1
+"
+115|"4 2 3 0
+2 2
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+4 2 3 0
+"
+116|"2 0 2 0
+1 3
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+2 0 2 0
+"
+117|"1 4 0 4
+2 2
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+1 4 0 4
+"
+118|"3 2 0 4
+2 2
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+3 2 0 4
+"
+119|"1 2 3 3
+2 2
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+1 2 3 3
+"
+120|"0 4 0 4
+1 2
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+0 4 0 4
+"
+121|"0 2 1 2
+1 3
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+0 2 1 2
+"
+122|"4 3 0 0
+2 2
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+4 3 0 0
+"
+123|"3 0 0 4
+1 2
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+3 0 0 4
+"
+124|"0 4 0 2
+1 3
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+0 4 0 2
+"
+125|"4 1 2 3
+0 2
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+4 1 2 3
+"
+126|"2 4 2 0
+1 2
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+2 4 2 0
+"
+127|"2 1 2 4
+0 2
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+2 1 2 4
+"
+128|"0 3 1 3
+0 2
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+0 3 1 3
+"
+129|"3 3 0 0
+2 2
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+3 3 0 0
+"
+130|"4 1 2 0
+1 3
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+4 1 2 0
+"
+131|"2 0 4 3
+0 2
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+2 0 4 3
+"
+132|"4 3 4 1
+0 1
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+4 3 4 1
+"
+133|"0 4 1 4
+0 2
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+0 4 1 4
+"
+134|"4 3 4 2
+0 1
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+4 3 4 2
+"
+135|"3 2 3 3
+1 1
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+3 2 3 3
+"
+136|"4 0 0 1
+1 3
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+4 0 0 1
+"
+137|"2 4 2 3
+0 1
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+2 4 2 3
+"
+138|"1 0 3 2
+1 3
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+1 0 3 2
+"
+139|"2 2 1 1
+1 2
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+2 2 1 1
+"
+140|"1 0 3 3
+1 2
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+1 0 3 3
+"
+141|"1 3 2 4
+1 2
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+1 3 2 4
+"
+142|"4 2 0 4
+2 2
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+4 2 0 4
+"
+143|"0 4 0 2
+1 3
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+0 4 0 2
+"
+144|"1 3 3 4
+1 1
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+1 3 3 4
+"
+145|"4 0 4 3
+0 1
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+4 0 4 3
+"
+146|"2 0 0 3
+1 3
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+2 0 0 3
+"
+147|"0 2 1 2
+1 3
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+0 2 1 2
+"
+148|"0 0 0 3
+1 2
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+0 0 0 3
+"
+149|"4 4 4 4
+0 0
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+4 4 4 4
+"
+150|"4 0 1 4
+0 2
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+4 0 1 4
+"
+151|"3 3 1 0
+1 2
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+3 3 1 0
+"
+152|"4 2 2 2
+1 1
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+4 2 2 2
+"
+153|"1 0 4 4
+1 2
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+1 0 4 4
+"
+154|"3 0 3 1
+0 2
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+3 0 3 1
+"
+155|"2 3 1 2
+0 2
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+2 3 1 2
+"
+156|"1 2 3 1
+2 2
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+1 2 3 1
+"
+157|"3 1 3 2
+0 2
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+3 1 3 2
+"
+158|"3 1 4 3
+0 1
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+3 1 4 3
+"
+159|"1 0 2 2
+1 3
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+1 0 2 2
+"
+160|"3 2 0 0
+3 3
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+3 2 0 0
+"
+161|"1 0 4 1
+1 2
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+1 0 4 1
+"
+162|"1 1 1 2
+1 2
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+1 1 1 2
+"
+163|"3 2 3 3
+1 1
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+3 2 3 3
+"
+164|"2 0 2 0
+1 3
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+2 0 2 0
+"
+165|"1 0 0 4
+2 3
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+1 0 0 4
+"
+166|"1 3 1 1
+1 1
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+1 3 1 1
+"
+167|"0 1 1 4
+0 2
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+0 1 1 4
+"
+168|"2 3 1 2
+0 2
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+2 3 1 2
+"
+169|"4 3 2 3
+0 1
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+4 3 2 3
+"
+170|"4 3 1 1
+0 1
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+4 3 1 1
+"
+171|"4 3 2 1
+0 2
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+4 3 2 1
+"
+172|"1 3 0 4
+2 2
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+1 3 0 4
+"
+173|"4 1 2 1
+0 2
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+4 1 2 1
+"
+174|"2 3 1 0
+1 3
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+2 3 1 0
+"
+175|"4 0 4 3
+0 1
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+4 0 4 3
+"
+176|"1 4 2 0
+2 3
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+1 4 2 0
+"
+177|"3 3 1 3
+0 1
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+3 3 1 3
+"
+178|"3 0 4 1
+0 2
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+3 0 4 1
+"
+179|"3 4 0 4
+1 1
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+3 4 0 4
+"
+180|"0 2 4 3
+1 2
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+0 2 4 3
+"
+181|"1 1 1 3
+1 1
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+1 1 1 3
+"
+182|"2 4 0 0
+2 3
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+2 4 0 0
+"
+183|"0 1 1 3
+0 2
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+0 1 1 3
+"
+184|"4 2 1 0
+2 3
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+4 2 1 0
+"
+185|"0 1 0 0
+2 3
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+0 1 0 0
+"
+186|"2 2 1 3
+1 2
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+2 2 1 3
+"
+187|"1 2 2 4
+2 2
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+1 2 2 4
+"
+188|"0 3 1 4
+0 2
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+0 3 1 4
+"
+189|"3 1 1 3
+0 1
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+3 1 1 3
+"
+190|"4 2 2 3
+1 1
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+4 2 2 3
+"
+191|"2 4 3 3
+0 1
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+2 4 3 3
+"
+192|"2 3 1 1
+0 2
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+2 3 1 1
+"
+193|"3 4 3 1
+0 1
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+3 4 3 1
+"
+194|"3 0 2 2
+0 2
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+3 0 2 2
+"
+195|"2 0 2 0
+1 3
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+2 0 2 0
+"
+196|"0 1 2 3
+0 3
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+0 1 2 3
+"
+197|"2 0 3 2
+0 2
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+2 0 3 2
+"
+198|"2 1 2 3
+0 2
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+2 1 2 3
+"
+199|"3 3 2 4
+0 1
+----
+"|"Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4.
+3 3 2 4
+"

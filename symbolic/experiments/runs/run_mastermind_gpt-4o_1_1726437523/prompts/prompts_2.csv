@@ -1,0 +1,801 @@
+|context|query
+0|"Guess: 2 4 2
+Response: 0 0
+
+"|"Guess: 2 4 2
+Response: ? ?
+-----------
+
+What do you think the response is for this final guess? Make sure to reply with just 2 digits between 0-3, separated by a single space character."
+1|"Guess: 1 4 2
+Response: 0 1
+
+"|"Guess: 1 4 2
+Response: ? ?
+-----------
+
+What do you think the response is for this final guess? Make sure to reply with just 2 digits between 0-3, separated by a single space character."
+2|"Guess: 4 5 0
+Response: 0 1
+
+"|"Guess: 4 5 0
+Response: ? ?
+-----------
+
+What do you think the response is for this final guess? Make sure to reply with just 2 digits between 0-3, separated by a single space character."
+3|"Guess: 1 4 5
+Response: 0 1
+
+"|"Guess: 1 4 5
+Response: ? ?
+-----------
+
+What do you think the response is for this final guess? Make sure to reply with just 2 digits between 0-3, separated by a single space character."
+4|"Guess: 4 0 3
+Response: 0 2
+
+"|"Guess: 4 0 3
+Response: ? ?
+-----------
+
+What do you think the response is for this final guess? Make sure to reply with just 2 digits between 0-3, separated by a single space character."
+5|"Guess: 1 5 1
+Response: 1 1
+
+"|"Guess: 1 5 1
+Response: ? ?
+-----------
+
+What do you think the response is for this final guess? Make sure to reply with just 2 digits between 0-3, separated by a single space character."
+6|"Guess: 5 5 0
+Response: 0 1
+
+"|"Guess: 5 5 0
+Response: ? ?
+-----------
+
+What do you think the response is for this final guess? Make sure to reply with just 2 digits between 0-3, separated by a single space character."
+7|"Guess: 2 4 1
+Response: 1 1
+
+"|"Guess: 2 4 1
+Response: ? ?
+-----------
+
+What do you think the response is for this final guess? Make sure to reply with just 2 digits between 0-3, separated by a single space character."
+8|"Guess: 4 4 3
+Response: 0 1
+
+"|"Guess: 4 4 3
+Response: ? ?
+-----------
+
+What do you think the response is for this final guess? Make sure to reply with just 2 digits between 0-3, separated by a single space character."
+9|"Guess: 2 5 5
+Response: 0 0
+
+"|"Guess: 2 5 5
+Response: ? ?
+-----------
+
+What do you think the response is for this final guess? Make sure to reply with just 2 digits between 0-3, separated by a single space character."
+10|"Guess: 0 4 4
+Response: 1 1
+
+"|"Guess: 0 4 4
+Response: ? ?
+-----------
+
+What do you think the response is for this final guess? Make sure to reply with just 2 digits between 0-3, separated by a single space character."
+11|"Guess: 5 3 2
+Response: 1 1
+
+"|"Guess: 5 3 2
+Response: ? ?
+-----------
+
+What do you think the response is for this final guess? Make sure to reply with just 2 digits between 0-3, separated by a single space character."
+12|"Guess: 3 3 2
+Response: 1 1
+
+"|"Guess: 3 3 2
+Response: ? ?
+-----------
+
+What do you think the response is for this final guess? Make sure to reply with just 2 digits between 0-3, separated by a single space character."
+13|"Guess: 4 4 4
+Response: 0 0
+
+"|"Guess: 4 4 4
+Response: ? ?
+-----------
+
+What do you think the response is for this final guess? Make sure to reply with just 2 digits between 0-3, separated by a single space character."
+14|"Guess: 1 2 4
+Response: 0 1
+
+"|"Guess: 1 2 4
+Response: ? ?
+-----------
+
+What do you think the response is for this final guess? Make sure to reply with just 2 digits between 0-3, separated by a single space character."
+15|"Guess: 1 0 2
+Response: 0 2
+
+"|"Guess: 1 0 2
+Response: ? ?
+-----------
+
+What do you think the response is for this final guess? Make sure to reply with just 2 digits between 0-3, separated by a single space character."
+16|"Guess: 2 4 2
+Response: 0 0
+
+"|"Guess: 2 4 2
+Response: ? ?
+-----------
+
+What do you think the response is for this final guess? Make sure to reply with just 2 digits between 0-3, separated by a single space character."
+17|"Guess: 2 3 1
+Response: 2 2
+
+"|"Guess: 2 3 1
+Response: ? ?
+-----------
+
+What do you think the response is for this final guess? Make sure to reply with just 2 digits between 0-3, separated by a single space character."
+18|"Guess: 2 2 2
+Response: 0 0
+
+"|"Guess: 2 2 2
+Response: ? ?
+-----------
+
+What do you think the response is for this final guess? Make sure to reply with just 2 digits between 0-3, separated by a single space character."
+19|"Guess: 4 2 0
+Response: 0 1
+
+"|"Guess: 4 2 0
+Response: ? ?
+-----------
+
+What do you think the response is for this final guess? Make sure to reply with just 2 digits between 0-3, separated by a single space character."
+20|"Guess: 1 1 0
+Response: 0 2
+
+"|"Guess: 1 1 0
+Response: ? ?
+-----------
+
+What do you think the response is for this final guess? Make sure to reply with just 2 digits between 0-3, separated by a single space character."
+21|"Guess: 1 2 2
+Response: 0 1
+
+"|"Guess: 1 2 2
+Response: ? ?
+-----------
+
+What do you think the response is for this final guess? Make sure to reply with just 2 digits between 0-3, separated by a single space character."
+22|"Guess: 5 2 3
+Response: 0 1
+
+"|"Guess: 5 2 3
+Response: ? ?
+-----------
+
+What do you think the response is for this final guess? Make sure to reply with just 2 digits between 0-3, separated by a single space character."
+23|"Guess: 3 5 2
+Response: 0 1
+
+"|"Guess: 3 5 2
+Response: ? ?
+-----------
+
+What do you think the response is for this final guess? Make sure to reply with just 2 digits between 0-3, separated by a single space character."
+24|"Guess: 4 4 3
+Response: 0 1
+
+"|"Guess: 4 4 3
+Response: ? ?
+-----------
+
+What do you think the response is for this final guess? Make sure to reply with just 2 digits between 0-3, separated by a single space character."
+25|"Guess: 1 1 5
+Response: 0 1
+
+"|"Guess: 1 1 5
+Response: ? ?
+-----------
+
+What do you think the response is for this final guess? Make sure to reply with just 2 digits between 0-3, separated by a single space character."
+26|"Guess: 3 0 5
+Response: 0 2
+
+"|"Guess: 3 0 5
+Response: ? ?
+-----------
+
+What do you think the response is for this final guess? Make sure to reply with just 2 digits between 0-3, separated by a single space character."
+27|"Guess: 0 1 2
+Response: 1 2
+
+"|"Guess: 0 1 2
+Response: ? ?
+-----------
+
+What do you think the response is for this final guess? Make sure to reply with just 2 digits between 0-3, separated by a single space character."
+28|"Guess: 2 4 2
+Response: 0 0
+
+"|"Guess: 2 4 2
+Response: ? ?
+-----------
+
+What do you think the response is for this final guess? Make sure to reply with just 2 digits between 0-3, separated by a single space character."
+29|"Guess: 2 0 4
+Response: 0 1
+
+"|"Guess: 2 0 4
+Response: ? ?
+-----------
+
+What do you think the response is for this final guess? Make sure to reply with just 2 digits between 0-3, separated by a single space character."
+30|"Guess: 4 4 2
+Response: 0 0
+
+"|"Guess: 4 4 2
+Response: ? ?
+-----------
+
+What do you think the response is for this final guess? Make sure to reply with just 2 digits between 0-3, separated by a single space character."
+31|"Guess: 1 4 3
+Response: 0 2
+
+"|"Guess: 1 4 3
+Response: ? ?
+-----------
+
+What do you think the response is for this final guess? Make sure to reply with just 2 digits between 0-3, separated by a single space character."
+32|"Guess: 2 4 3
+Response: 0 1
+
+"|"Guess: 2 4 3
+Response: ? ?
+-----------
+
+What do you think the response is for this final guess? Make sure to reply with just 2 digits between 0-3, separated by a single space character."
+33|"Guess: 1 4 0
+Response: 0 2
+
+"|"Guess: 1 4 0
+Response: ? ?
+-----------
+
+What do you think the response is for this final guess? Make sure to reply with just 2 digits between 0-3, separated by a single space character."
+34|"Guess: 1 3 3
+Response: 1 2
+
+"|"Guess: 1 3 3
+Response: ? ?
+-----------
+
+What do you think the response is for this final guess? Make sure to reply with just 2 digits between 0-3, separated by a single space character."
+35|"Guess: 2 3 3
+Response: 1 1
+
+"|"Guess: 2 3 3
+Response: ? ?
+-----------
+
+What do you think the response is for this final guess? Make sure to reply with just 2 digits between 0-3, separated by a single space character."
+36|"Guess: 4 1 1
+Response: 1 1
+
+"|"Guess: 4 1 1
+Response: ? ?
+-----------
+
+What do you think the response is for this final guess? Make sure to reply with just 2 digits between 0-3, separated by a single space character."
+37|"Guess: 1 1 0
+Response: 0 2
+
+"|"Guess: 1 1 0
+Response: ? ?
+-----------
+
+What do you think the response is for this final guess? Make sure to reply with just 2 digits between 0-3, separated by a single space character."
+38|"Guess: 1 2 3
+Response: 0 2
+
+"|"Guess: 1 2 3
+Response: ? ?
+-----------
+
+What do you think the response is for this final guess? Make sure to reply with just 2 digits between 0-3, separated by a single space character."
+39|"Guess: 3 5 3
+Response: 0 1
+
+"|"Guess: 3 5 3
+Response: ? ?
+-----------
+
+What do you think the response is for this final guess? Make sure to reply with just 2 digits between 0-3, separated by a single space character."
+40|"Guess: 4 1 3
+Response: 0 2
+
+"|"Guess: 4 1 3
+Response: ? ?
+-----------
+
+What do you think the response is for this final guess? Make sure to reply with just 2 digits between 0-3, separated by a single space character."
+41|"Guess: 1 2 2
+Response: 0 1
+
+"|"Guess: 1 2 2
+Response: ? ?
+-----------
+
+What do you think the response is for this final guess? Make sure to reply with just 2 digits between 0-3, separated by a single space character."
+42|"Guess: 1 4 3
+Response: 0 2
+
+"|"Guess: 1 4 3
+Response: ? ?
+-----------
+
+What do you think the response is for this final guess? Make sure to reply with just 2 digits between 0-3, separated by a single space character."
+43|"Guess: 1 4 2
+Response: 0 1
+
+"|"Guess: 1 4 2
+Response: ? ?
+-----------
+
+What do you think the response is for this final guess? Make sure to reply with just 2 digits between 0-3, separated by a single space character."
+44|"Guess: 5 4 4
+Response: 0 0
+
+"|"Guess: 5 4 4
+Response: ? ?
+-----------
+
+What do you think the response is for this final guess? Make sure to reply with just 2 digits between 0-3, separated by a single space character."
+45|"Guess: 2 0 0
+Response: 0 1
+
+"|"Guess: 2 0 0
+Response: ? ?
+-----------
+
+What do you think the response is for this final guess? Make sure to reply with just 2 digits between 0-3, separated by a single space character."
+46|"Guess: 0 1 1
+Response: 2 2
+
+"|"Guess: 0 1 1
+Response: ? ?
+-----------
+
+What do you think the response is for this final guess? Make sure to reply with just 2 digits between 0-3, separated by a single space character."
+47|"Guess: 5 4 2
+Response: 0 0
+
+"|"Guess: 5 4 2
+Response: ? ?
+-----------
+
+What do you think the response is for this final guess? Make sure to reply with just 2 digits between 0-3, separated by a single space character."
+48|"Guess: 3 0 1
+Response: 1 3
+
+"|"Guess: 3 0 1
+Response: ? ?
+-----------
+
+What do you think the response is for this final guess? Make sure to reply with just 2 digits between 0-3, separated by a single space character."
+49|"Guess: 2 4 1
+Response: 1 1
+
+"|"Guess: 2 4 1
+Response: ? ?
+-----------
+
+What do you think the response is for this final guess? Make sure to reply with just 2 digits between 0-3, separated by a single space character."
+50|"Guess: 1 5 2
+Response: 0 1
+
+"|"Guess: 1 5 2
+Response: ? ?
+-----------
+
+What do you think the response is for this final guess? Make sure to reply with just 2 digits between 0-3, separated by a single space character."
+51|"Guess: 5 0 2
+Response: 0 1
+
+"|"Guess: 5 0 2
+Response: ? ?
+-----------
+
+What do you think the response is for this final guess? Make sure to reply with just 2 digits between 0-3, separated by a single space character."
+52|"Guess: 0 5 3
+Response: 1 2
+
+"|"Guess: 0 5 3
+Response: ? ?
+-----------
+
+What do you think the response is for this final guess? Make sure to reply with just 2 digits between 0-3, separated by a single space character."
+53|"Guess: 1 5 4
+Response: 0 1
+
+"|"Guess: 1 5 4
+Response: ? ?
+-----------
+
+What do you think the response is for this final guess? Make sure to reply with just 2 digits between 0-3, separated by a single space character."
+54|"Guess: 5 2 5
+Response: 0 0
+
+"|"Guess: 5 2 5
+Response: ? ?
+-----------
+
+What do you think the response is for this final guess? Make sure to reply with just 2 digits between 0-3, separated by a single space character."
+55|"Guess: 2 0 2
+Response: 0 1
+
+"|"Guess: 2 0 2
+Response: ? ?
+-----------
+
+What do you think the response is for this final guess? Make sure to reply with just 2 digits between 0-3, separated by a single space character."
+56|"Guess: 2 1 0
+Response: 0 2
+
+"|"Guess: 2 1 0
+Response: ? ?
+-----------
+
+What do you think the response is for this final guess? Make sure to reply with just 2 digits between 0-3, separated by a single space character."
+57|"Guess: 0 0 3
+Response: 1 2
+
+"|"Guess: 0 0 3
+Response: ? ?
+-----------
+
+What do you think the response is for this final guess? Make sure to reply with just 2 digits between 0-3, separated by a single space character."
+58|"Guess: 3 5 1
+Response: 1 2
+
+"|"Guess: 3 5 1
+Response: ? ?
+-----------
+
+What do you think the response is for this final guess? Make sure to reply with just 2 digits between 0-3, separated by a single space character."
+59|"Guess: 0 2 0
+Response: 1 1
+
+"|"Guess: 0 2 0
+Response: ? ?
+-----------
+
+What do you think the response is for this final guess? Make sure to reply with just 2 digits between 0-3, separated by a single space character."
+60|"Guess: 1 0 0
+Response: 0 2
+
+"|"Guess: 1 0 0
+Response: ? ?
+-----------
+
+What do you think the response is for this final guess? Make sure to reply with just 2 digits between 0-3, separated by a single space character."
+61|"Guess: 2 3 5
+Response: 1 1
+
+"|"Guess: 2 3 5
+Response: ? ?
+-----------
+
+What do you think the response is for this final guess? Make sure to reply with just 2 digits between 0-3, separated by a single space character."
+62|"Guess: 0 2 4
+Response: 1 1
+
+"|"Guess: 0 2 4
+Response: ? ?
+-----------
+
+What do you think the response is for this final guess? Make sure to reply with just 2 digits between 0-3, separated by a single space character."
+63|"Guess: 1 3 2
+Response: 1 2
+
+"|"Guess: 1 3 2
+Response: ? ?
+-----------
+
+What do you think the response is for this final guess? Make sure to reply with just 2 digits between 0-3, separated by a single space character."
+64|"Guess: 5 5 3
+Response: 0 1
+
+"|"Guess: 5 5 3
+Response: ? ?
+-----------
+
+What do you think the response is for this final guess? Make sure to reply with just 2 digits between 0-3, separated by a single space character."
+65|"Guess: 5 1 1
+Response: 1 1
+
+"|"Guess: 5 1 1
+Response: ? ?
+-----------
+
+What do you think the response is for this final guess? Make sure to reply with just 2 digits between 0-3, separated by a single space character."
+66|"Guess: 4 5 5
+Response: 0 0
+
+"|"Guess: 4 5 5
+Response: ? ?
+-----------
+
+What do you think the response is for this final guess? Make sure to reply with just 2 digits between 0-3, separated by a single space character."
+67|"Guess: 0 0 1
+Response: 2 2
+
+"|"Guess: 0 0 1
+Response: ? ?
+-----------
+
+What do you think the response is for this final guess? Make sure to reply with just 2 digits between 0-3, separated by a single space character."
+68|"Guess: 5 3 1
+Response: 2 2
+
+"|"Guess: 5 3 1
+Response: ? ?
+-----------
+
+What do you think the response is for this final guess? Make sure to reply with just 2 digits between 0-3, separated by a single space character."
+69|"Guess: 3 3 4
+Response: 1 1
+
+"|"Guess: 3 3 4
+Response: ? ?
+-----------
+
+What do you think the response is for this final guess? Make sure to reply with just 2 digits between 0-3, separated by a single space character."
+70|"Guess: 0 4 2
+Response: 1 1
+
+"|"Guess: 0 4 2
+Response: ? ?
+-----------
+
+What do you think the response is for this final guess? Make sure to reply with just 2 digits between 0-3, separated by a single space character."
+71|"Guess: 5 3 5
+Response: 1 1
+
+"|"Guess: 5 3 5
+Response: ? ?
+-----------
+
+What do you think the response is for this final guess? Make sure to reply with just 2 digits between 0-3, separated by a single space character."
+72|"Guess: 1 5 5
+Response: 0 1
+
+"|"Guess: 1 5 5
+Response: ? ?
+-----------
+
+What do you think the response is for this final guess? Make sure to reply with just 2 digits between 0-3, separated by a single space character."
+73|"Guess: 2 2 5
+Response: 0 0
+
+"|"Guess: 2 2 5
+Response: ? ?
+-----------
+
+What do you think the response is for this final guess? Make sure to reply with just 2 digits between 0-3, separated by a single space character."
+74|"Guess: 5 3 4
+Response: 1 1
+
+"|"Guess: 5 3 4
+Response: ? ?
+-----------
+
+What do you think the response is for this final guess? Make sure to reply with just 2 digits between 0-3, separated by a single space character."
+75|"Guess: 0 3 5
+Response: 2 2
+
+"|"Guess: 0 3 5
+Response: ? ?
+-----------
+
+What do you think the response is for this final guess? Make sure to reply with just 2 digits between 0-3, separated by a single space character."
+76|"Guess: 4 0 4
+Response: 0 1
+
+"|"Guess: 4 0 4
+Response: ? ?
+-----------
+
+What do you think the response is for this final guess? Make sure to reply with just 2 digits between 0-3, separated by a single space character."
+77|"Guess: 4 3 1
+Response: 2 2
+
+"|"Guess: 4 3 1
+Response: ? ?
+-----------
+
+What do you think the response is for this final guess? Make sure to reply with just 2 digits between 0-3, separated by a single space character."
+78|"Guess: 0 2 2
+Response: 1 1
+
+"|"Guess: 0 2 2
+Response: ? ?
+-----------
+
+What do you think the response is for this final guess? Make sure to reply with just 2 digits between 0-3, separated by a single space character."
+79|"Guess: 0 5 4
+Response: 1 1
+
+"|"Guess: 0 5 4
+Response: ? ?
+-----------
+
+What do you think the response is for this final guess? Make sure to reply with just 2 digits between 0-3, separated by a single space character."
+80|"Guess: 1 3 4
+Response: 1 2
+
+"|"Guess: 1 3 4
+Response: ? ?
+-----------
+
+What do you think the response is for this final guess? Make sure to reply with just 2 digits between 0-3, separated by a single space character."
+81|"Guess: 4 0 4
+Response: 0 1
+
+"|"Guess: 4 0 4
+Response: ? ?
+-----------
+
+What do you think the response is for this final guess? Make sure to reply with just 2 digits between 0-3, separated by a single space character."
+82|"Guess: 4 5 0
+Response: 0 1
+
+"|"Guess: 4 5 0
+Response: ? ?
+-----------
+
+What do you think the response is for this final guess? Make sure to reply with just 2 digits between 0-3, separated by a single space character."
+83|"Guess: 0 1 4
+Response: 1 2
+
+"|"Guess: 0 1 4
+Response: ? ?
+-----------
+
+What do you think the response is for this final guess? Make sure to reply with just 2 digits between 0-3, separated by a single space character."
+84|"Guess: 0 2 1
+Response: 2 2
+
+"|"Guess: 0 2 1
+Response: ? ?
+-----------
+
+What do you think the response is for this final guess? Make sure to reply with just 2 digits between 0-3, separated by a single space character."
+85|"Guess: 4 5 2
+Response: 0 0
+
+"|"Guess: 4 5 2
+Response: ? ?
+-----------
+
+What do you think the response is for this final guess? Make sure to reply with just 2 digits between 0-3, separated by a single space character."
+86|"Guess: 0 0 1
+Response: 2 2
+
+"|"Guess: 0 0 1
+Response: ? ?
+-----------
+
+What do you think the response is for this final guess? Make sure to reply with just 2 digits between 0-3, separated by a single space character."
+87|"Guess: 1 5 1
+Response: 1 1
+
+"|"Guess: 1 5 1
+Response: ? ?
+-----------
+
+What do you think the response is for this final guess? Make sure to reply with just 2 digits between 0-3, separated by a single space character."
+88|"Guess: 0 0 2
+Response: 1 1
+
+"|"Guess: 0 0 2
+Response: ? ?
+-----------
+
+What do you think the response is for this final guess? Make sure to reply with just 2 digits between 0-3, separated by a single space character."
+89|"Guess: 3 2 3
+Response: 0 1
+
+"|"Guess: 3 2 3
+Response: ? ?
+-----------
+
+What do you think the response is for this final guess? Make sure to reply with just 2 digits between 0-3, separated by a single space character."
+90|"Guess: 4 1 3
+Response: 0 2
+
+"|"Guess: 4 1 3
+Response: ? ?
+-----------
+
+What do you think the response is for this final guess? Make sure to reply with just 2 digits between 0-3, separated by a single space character."
+91|"Guess: 2 1 4
+Response: 0 1
+
+"|"Guess: 2 1 4
+Response: ? ?
+-----------
+
+What do you think the response is for this final guess? Make sure to reply with just 2 digits between 0-3, separated by a single space character."
+92|"Guess: 1 0 4
+Response: 0 2
+
+"|"Guess: 1 0 4
+Response: ? ?
+-----------
+
+What do you think the response is for this final guess? Make sure to reply with just 2 digits between 0-3, separated by a single space character."
+93|"Guess: 1 1 4
+Response: 0 1
+
+"|"Guess: 1 1 4
+Response: ? ?
+-----------
+
+What do you think the response is for this final guess? Make sure to reply with just 2 digits between 0-3, separated by a single space character."
+94|"Guess: 1 2 4
+Response: 0 1
+
+"|"Guess: 1 2 4
+Response: ? ?
+-----------
+
+What do you think the response is for this final guess? Make sure to reply with just 2 digits between 0-3, separated by a single space character."
+95|"Guess: 3 0 0
+Response: 0 2
+
+"|"Guess: 3 0 0
+Response: ? ?
+-----------
+
+What do you think the response is for this final guess? Make sure to reply with just 2 digits between 0-3, separated by a single space character."
+96|"Guess: 5 2 5
+Response: 0 0
+
+"|"Guess: 5 2 5
+Response: ? ?
+-----------
+
+What do you think the response is for this final guess? Make sure to reply with just 2 digits between 0-3, separated by a single space character."
+97|"Guess: 4 1 4
+Response: 0 1
+
+"|"Guess: 4 1 4
+Response: ? ?
+-----------
+
+What do you think the response is for this final guess? Make sure to reply with just 2 digits between 0-3, separated by a single space character."
+98|"Guess: 1 5 3
+Response: 0 2
+
+"|"Guess: 1 5 3
+Response: ? ?
+-----------
+
+What do you think the response is for this final guess? Make sure to reply with just 2 digits between 0-3, separated by a single space character."
+99|"Guess: 3 5 3
+Response: 0 1
+
+"|"Guess: 3 5 3
+Response: ? ?
+-----------
+
+What do you think the response is for this final guess? Make sure to reply with just 2 digits between 0-3, separated by a single space character."

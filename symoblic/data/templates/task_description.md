@@ -6,16 +6,16 @@ Note: Both the input and output are 6x6 grids where each cell is filled with 1 o
 
 #### Color Mapping:
 The grid uses the following color codes, represented by capital letters:
-- **A**: Red
-- **B**: Blue
-- **C**: Green
-- **D**: Yellow
-- **E**: Purple
-- **F**: Orange
+- **A**: Black
+- **B**: Purple
+- **C**: Red
+- **D**: Green
+- **E**: Yellow
+- **F**: Gray
 - **G**: Pink
-- **H**: Brown
-- **I**: Gray
-- **J**: Black
+- **H**: Orange
+- **I**: Blue
+- **J**: Brown
 
 
 #### Toy example representation of input and output grid:
@@ -38,3 +38,7 @@ D C B A J I
 J I H G F E
 A B C D E F
 ```
+
+You will be provided with 5 options for the output grid. Only one of these 5 options - [ 0, 1, 2, 3, 4] will be the correct output grid for the respective input grid. You need to provide the option number in an <answer> tag in the following manner:
+<answer>1</answer>
+and nothing else.

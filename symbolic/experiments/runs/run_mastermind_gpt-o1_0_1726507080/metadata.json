@@ -1,0 +1,1 @@
+{"model": "gpt-o1", "dataset.name": "mastermind", "dataset.n_tasks": 3, "dataset.n_samples": 100, "dataset.code_length": 4, "dataset.num_colours": 6, "seed": 0, "prompt_type": "no_options", "run_id": "run_mastermind_gpt-o1_0_1726507080"}
