@@ -183,6 +183,9 @@ class MetaOptimizer(ABC, LightningModule):
 
     @torch.inference_mode()
     def log_effective_zdim(self, mode: Literal["train_tasks", "val_tasks"]):
+        if self.logger is None:
+            return
+
         # Get the dataloader
         if mode == "train_tasks":
             dl = self.trainer.datamodule.train_dataloader()
