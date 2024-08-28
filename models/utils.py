@@ -167,10 +167,14 @@ def fastfood_torched_batched(
 
 class MLP(nn.Module):
     @beartype
-    def __init__(self, in_features: int, h_dim: int, n_layers: int, out_features: int):
+    def __init__(
+        self, in_features: int, h_dim: int, n_layers: int, out_features: int, dropout_rate: float = 0.0
+    ):
         super().__init__()
         self.layers = nn.ModuleList()
         self.relu = nn.ReLU()
+        self.dropout = nn.Dropout(dropout_rate)
+
         self.layers.append(nn.Linear(in_features, h_dim))
         for i in range(n_layers - 2):
             self.layers.append(nn.Linear(h_dim, h_dim))
@@ -181,8 +185,9 @@ class MLP(nn.Module):
 
     @beartype
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        for i, layer in enumerate(self.layers[:-1]):
+        for layer in self.layers[:-1]:
             x = self.relu(layer(x))
+            x = self.dropout(x)
         x = self.layers[-1](x)  # Apply the last layer without ReLU
         return x
 
