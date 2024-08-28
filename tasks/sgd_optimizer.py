@@ -46,12 +46,19 @@ class StandardOptimizerForRegression(LightningModule):
 
     @beartype
     def training_step(self, data, batch_idx) -> Tensor:
-
         data, task_params = data
         x, y = data["x"], data[self.hparams.y_key]
         preds = self.forward(x)
 
         loss = self.loss_fn(preds, y)
+
+        if self.hparams.regularization_type == "L1":
+            loss += self.hparams.lambda_reg * sum(torch.norm(param, 1) for param in self.parameters())
+        elif self.hparams.regularization_type == "L2":
+            loss += self.hparams.lambda_reg * sum(torch.norm(param, 2) for param in self.parameters())
+        else:
+            pass  # No regularization
+
         self.log("train_loss", loss, prog_bar=True, on_step=False, on_epoch=True)
 
         return loss

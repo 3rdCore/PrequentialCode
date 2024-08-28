@@ -26,6 +26,8 @@ task:
   lr: 1e-4
   train_val_prop: 0.8
   n_fit_total: 1000
+  regularization_type: null
+  lambda_reg: 1e-3
 
 callbacks:
   _target_: tasks.sgd_optimizer.CustomEarlyStopping
