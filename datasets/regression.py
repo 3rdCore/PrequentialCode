@@ -1,6 +1,6 @@
 import copy
 from abc import abstractmethod
-from typing import Any, Iterable, List, Literal
+from typing import Any, Dict, Iterable, List, Literal, Optional
 
 import numpy as np
 import torch
@@ -395,3 +395,56 @@ class MLPLowRankRegression(RegressionDataset):
                 x = self.activation(x)
 
         return x
+
+
+class TchebyshevRegression(RegressionDataset):
+    @beartype
+    def __init__(
+        self,
+        x_dim: int,
+        y_dim: int,
+        n_tasks: int,
+        n_samples: int,
+        noise: float = 0.0,
+        degree: int = 5,
+        has_ood: bool = True,
+        ood_style: str = "shift_scale",
+        ood_shift: float | None = 2.0,
+        ood_scale: float | None = 3.0,
+        data_dist: str = "normal",
+        shuffle_samples: bool = True,
+    ):
+        assert y_dim == 1  # only 1D output supported for now
+        self.degree = degree
+
+        super().__init__(
+            x_dim=x_dim,
+            y_dim=y_dim,
+            n_tasks=n_tasks,
+            n_samples=n_samples,
+            noise=noise,
+            has_ood=has_ood,
+            ood_style=ood_style,
+            ood_shift=ood_shift,
+            ood_scale=ood_scale,
+            data_dist=data_dist,
+            shuffle_samples=shuffle_samples,
+        )
+
+    @beartype
+    def sample_task_params(self, n_tasks: Optional[int] = None) -> Dict[str, Tensor]:
+        # Chebyshev polynomial coefficients
+        n_tasks = n_tasks if n_tasks is not None else self.n_tasks
+        coeffs = torch.randn(n_tasks, (self.x_dim) * (self.degree + 1), self.y_dim)
+        return {"coeffs": coeffs}
+
+    @beartype
+    def function(self, x: Tensor, task_params: Dict[str, Tensor]) -> Tensor:
+        coeffs = task_params["coeffs"]
+        T = [torch.ones_like(x), x]
+        for _ in range(2, self.degree + 1):
+            Tn = 2 * x * T[-1] - T[-2]  # recurrence relation
+            T.append(Tn)
+        T = torch.stack(T, dim=-1)
+        y = torch.einsum("ndy,ntyd->nty", coeffs, T)
+        return y
