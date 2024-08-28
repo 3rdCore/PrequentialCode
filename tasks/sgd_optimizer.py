@@ -32,6 +32,8 @@ class StandardOptimizerForRegression(LightningModule):
         y_key: str = "y",
         loss_fn: _Loss = MSELoss(),
         n_fit_total=1000,
+        regularization_type: Literal["L1", "L2", None] = None,
+        lambda_reg: float = 0.0,
     ):
         super().__init__()
         self.save_hyperparameters(ignore=["optimizer", "loss_fn"])
