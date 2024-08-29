@@ -298,8 +298,8 @@ class MetaOptimizerImplicit(ABC, LightningModule):
         """
         preds_nexttoken = self.model.forward(x)
         preds_nexttoken = {
-            name: preds_nexttoken[name][self.hparams.min_train_samples - 1 : -1] for name in preds_nexttoken
-        }  # Drop last token (no ground truth)
+            name: preds_nexttoken[name][self.hparams.min_train_samples - 1 :] for name in preds_nexttoken
+        }
         x_nexttoken = {name: x[name][self.hparams.min_train_samples - 1 :] for name in x}
         return preds_nexttoken, x_nexttoken
 
