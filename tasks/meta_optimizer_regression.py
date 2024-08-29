@@ -12,15 +12,16 @@ from torch.utils.data import DataLoader
 from datasets.interfaces import custom_collate_fn
 from datasets.regression import RegressionDataset
 from models.context_aggregator import ContextAggregator
+from models.implicit import ImplicitModel
 from models.predictor import Predictor
-from tasks.meta_optimizer import MetaOptimizer
+from tasks.meta_optimizer import MetaOptimizerExplicit, MetaOptimizerImplicit
 from utils.plotting import fig2img
 
 
-class MetaOptimizerForRegression(MetaOptimizer):
+class MetaOptimizerExplicitForRegression(MetaOptimizerExplicit):
     def __init__(
         self,
-        meta_objective: MetaOptimizer.MetaObjective,
+        meta_objective: MetaOptimizerExplicit.MetaObjective,
         context_aggregator: ContextAggregator,
         predictor: Predictor,
         min_train_samples: int = 1,
@@ -30,7 +31,13 @@ class MetaOptimizerForRegression(MetaOptimizer):
         probe_n_context_points: tuple[int] = (1, 4, 10, 50),
         probe_resolution: int = 100,
     ):
-        super().__init__(meta_objective, context_aggregator, predictor, min_train_samples, lr)
+        super().__init__(
+            meta_objective=meta_objective,
+            context_aggregator=context_aggregator,
+            predictor=predictor,
+            min_train_samples=min_train_samples,
+            lr=lr,
+        )
         self.n_probe_tasks = n_probe_tasks
         self.probe_n_context_points = probe_n_context_points
         self.probe_resolution = probe_resolution
@@ -243,3 +250,29 @@ class MetaOptimizerForRegression(MetaOptimizer):
             )
             ax.legend().remove()
         self.logger.log_image(key=f"probes/{mode}-model_vs_true", images=[fig2img(fig)])
+
+
+class MetaOptimizerImplicitForRegression(MetaOptimizerImplicit):
+    def __init__(
+        self,
+        model: ImplicitModel,
+        min_train_samples: int = 1,
+        lr: float = 1e-3,
+        loss_fn: _Loss = MSELoss(reduction="none"),
+    ):
+        super().__init__(model=model, min_train_samples=min_train_samples, lr=lr)
+
+        self.loss_fn = loss_fn
+
+    def loss_function(self, target: dict[str, Tensor], preds: dict[str, Tensor]) -> Tensor:
+        """
+        Args:
+            target (dict[str, Tensor]): Inputs/targets (samples, tasks, *).
+            preds (dict[str, Tensor]): Predictions (samples, tasks, *).
+
+        Returns:
+            Tensor: Losses (samples, tasks).
+        """
+        assert len(preds) == 1, "Only one output key supported for regression tasks"
+        y_key = list(preds.keys())[0]
+        return torch.mean(self.loss_fn(preds[y_key], target[y_key]), dim=-1)  # component-wise averaging

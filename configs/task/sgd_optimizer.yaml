@@ -1,6 +1,5 @@
 #@package _global_
 
-
 defaults:
   - predictor: MLP
   - _self_

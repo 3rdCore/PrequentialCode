@@ -8,11 +8,12 @@ from lightning import LightningModule
 from torch import Tensor
 
 from models.context_aggregator import ContextAggregator
+from models.implicit import ImplicitModel
 from models.predictor import Predictor
-from utils.functions import torch_pca
+from utils import torch_pca
 
 
-class MetaOptimizer(ABC, LightningModule):
+class MetaOptimizerExplicit(ABC, LightningModule):
     MetaObjective = Literal["train", "prequential"]
 
     @beartype
@@ -249,6 +250,129 @@ class MetaOptimizer(ABC, LightningModule):
         loss = loss_train if self.meta_objective == "train" else loss_nexttoken
         self.log(f"{mode}/loss_train", loss_train, batch_size=num_tasks)
         self.log(f"{mode}/loss_nexttoken", loss_nexttoken, batch_size=num_tasks)
+
+        return loss
+
+    @abstractmethod
+    def loss_function(self, target: dict[str, Tensor], preds: dict[str, Tensor]) -> Tensor:
+        """Do not average across samples and tasks! Return shape should be
+
+        Args:
+            target (dict[str, Tensor]): Inputs/targets (samples, tasks, *).
+            preds (dict[str, Tensor]): Predictions (samples, tasks, *).
+
+        Returns:
+            Tensor: Losses (samples, tasks).
+        """
+        pass
+
+    def configure_optimizers(self):
+        return torch.optim.Adam(self.parameters(), lr=self.hparams.lr)
+
+
+class MetaOptimizerImplicit(ABC, LightningModule):
+    @beartype
+    def __init__(
+        self,
+        model: ImplicitModel,
+        min_train_samples: int = 1,
+        lr: float = 1e-4,
+    ):
+        super().__init__()
+        self.save_hyperparameters(ignore=["model"])
+        self.save_hyperparameters({"meta_objective": "prequential"})
+
+        self.model = model
+
+    @beartype
+    def forward(self, x: dict[str, Tensor]) -> tuple[dict[str, Tensor], dict[str, Tensor]]:
+        """Return the next-token predictions.
+
+        Args:
+            x (dict[str, Tensor]):  Input data, each with shape (samples, tasks, *).
+
+        Returns:
+            tuple[dict[str, Tensor], dict[str, Tensor]]: Next-token predictions.
+            - next-token predictions: (samples - min_train_samples + 1, tasks, *).
+            - x_nexttoken: (samples - min_train_samples + 1, tasks, *).
+        """
+        preds_nexttoken = self.model.forward(x)
+        preds_nexttoken = {
+            name: preds_nexttoken[name][self.hparams.min_train_samples - 1 : -1] for name in preds_nexttoken
+        }  # Drop last token (no ground truth)
+        x_nexttoken = {name: x[name][self.hparams.min_train_samples - 1 :] for name in x}
+        return preds_nexttoken, x_nexttoken
+
+    @beartype
+    def training_step(self, data, batch_idx):
+        x, task_params = data
+        preds_nexttoken, x_nexttoken = self.forward(x)
+        loss = self.losses_and_metrics(preds_nexttoken, x_nexttoken, task_params)
+        return loss
+
+    @beartype
+    def validation_step(self, data, batch_idx):
+        x, task_params = data
+        preds_nexttoken, x_nexttoken = self.forward(x)
+        _ = self.losses_and_metrics(preds_nexttoken, x_nexttoken, task_params)
+
+    @torch.inference_mode()
+    def on_train_end(self):
+        self.log_loss_vs_nsamples(mode="train_tasks")
+        self.log_loss_vs_nsamples(mode="val_tasks")
+
+    @torch.inference_mode()
+    def log_loss_vs_nsamples(self, mode: Literal["train_tasks", "val_tasks"]):
+        if self.logger is None:
+            return
+
+        # Get the dataloader
+        if mode == "train_tasks":
+            dl = self.trainer.datamodule.train_dataloader()
+        else:
+            dl = self.trainer.datamodule.val_dataloader()
+
+        num_tasks = len(dl.dataset)
+        n_sample_loss_nexttoken = None
+        for x, _ in dl:
+            x = {name: x[name].to(self.device) for name in x}
+            preds_nexttoken, x_nexttoken = self.forward(x)
+            loss = self.loss_function(x_nexttoken, preds_nexttoken)
+            loss = loss.sum(dim=-1) / num_tasks
+
+            if n_sample_loss_nexttoken is None:
+                n_sample_loss_nexttoken = loss
+            else:
+                n_sample_loss_nexttoken += loss
+
+        for i in range(len(n_sample_loss_nexttoken)):
+            n_samples = i + self.hparams.min_train_samples - 1
+            l = n_sample_loss_nexttoken[i].cpu()
+            self.logger.experiment.log({"n_samples": n_samples, f"{mode}/n_sample_loss_nexttoken": l})
+
+    @beartype
+    def losses_and_metrics(
+        self,
+        preds_nexttoken: dict[str, Tensor],
+        x_nexttoken: dict[str, Tensor],
+        task_params: dict[str, Iterable] | None,
+    ) -> torch.Tensor:
+        """Computes and logs losses and other metrics. Can be subclassed to add more metrics, or modify loss.
+
+        Args:
+            preds_nexttoken (dict[str, Tensor]): Next-token predictions (samples, tasks, *).
+            x_nexttoken (dict[str, Tensor]): Inputs/targets for next-token predictions (samples, tasks, *).
+            task_params (dict[str, Iterable] | None): True task parameters (tasks).
+
+        Returns:
+            torch.Tensor: Scalar loss to optimize.
+        """
+        mode = "train_tasks" if self.training else "val_tasks"
+        num_tasks = preds_nexttoken[list(preds_nexttoken.keys())[0]].shape[1]
+
+        # Main loss
+        loss = self.loss_function(x_nexttoken, preds_nexttoken).mean()
+        self.log(f"{mode}/loss_nexttoken", loss, batch_size=num_tasks)
 
         return loss
 
