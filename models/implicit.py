@@ -46,7 +46,6 @@ class DecoderTransformer(ImplicitModel):
 
         self.x_embedding = nn.Linear(x_dim, h_dim)
         self.y_embedding = nn.Linear(y_dim, h_dim)
-        self.x0_embedding = nn.Parameter(torch.zeros(1, 1, h_dim))
         self.position_encoding = PositionalEncoding(h_dim, max_len=max_seq_len + 1)
         self.encoder = nn.TransformerEncoder(
             nn.TransformerEncoderLayer(
@@ -78,17 +77,15 @@ class DecoderTransformer(ImplicitModel):
             [x[name] for name in self.y_keys], dim=-1
         )
         x, y = self.x_embedding(x), self.y_embedding(y)
-        x0 = self.x0_embedding.expand(1, x.shape[1], -1)
         seq = torch.stack([x, y], dim=1).view(
             x.shape[0] * 2, x.shape[1], -1
         )  # Interleave concatenated x and y
-        seq = torch.cat([x0, seq], dim=0)
         seq = self.position_encoding(seq)
 
         # Encode the sequence
         causal_mask = torch.nn.Transformer.generate_square_subsequent_mask(seq.shape[0])
         seq = self.encoder.forward(seq, mask=causal_mask, is_causal=True)
-        seq = torch.cat([seq[:1], seq[1::2]])  # Drop the y token representations
+        seq = torch.cat([seq[::2]])  # Drop the y token representations
 
         # Readout
         y = self.readout(seq)
