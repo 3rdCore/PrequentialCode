@@ -223,6 +223,12 @@ class MLPLowRankPredictor(Predictor):
         self.ff_upsample = nn.ModuleList([FastFoodUpsample(z_dim, ps) for ps in param_shapes])
 
     @beartype
+    def to(self, device):
+        super().to(device)
+        self.ff_upsample = self.ff_upsample.to(device)
+        return self
+
+    @beartype
     def forward(self, x: dict[str, Tensor], z: dict[str, Tensor]) -> dict[str, Tensor]:
         """Peform a forward pass through an MLP modulated in a low-rank way by z.
 
@@ -238,7 +244,7 @@ class MLPLowRankPredictor(Predictor):
 
         seq, batch, _ = z.shape
         z = z.view(seq * batch, -1)  # (samples * tasks, z_dim)
-        z = self.ff_upsample(z)  # a list of 2*tensors per layer
+        z = [upsample(z) for upsample in self.ff_upsample]
 
         for i in range(self.n_layers):
             w0 = self.params_0[i].weight
