@@ -68,7 +68,7 @@ def get_logprobs(response, value):
     token_logprobs = tokens[[token["token"] for token in tokens].index(value)]
     logprobs = dict(map(lambda x: (x["token"], x["logprob"]), token_logprobs["top_logprobs"]))
     # print(response.content, logprobs)
-    return [logprobs[token] for token in OPTIONS]
+    return logprobs
 
 
 def parse_response(response, parse_failed=False):
