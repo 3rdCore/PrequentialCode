@@ -21,7 +21,8 @@ Choose the option that best represents the output grid based on the given input 
 TASK_DESCRIPTION_PATH = "../data/templates/task_description.md"
 TASK_QUERY_TEMPLATE_PATH = "../data/templates/task_query.template"
 TASK_QUERY_OPTION_TEMPLATE_PATH = "../data/templates/task_query_option.template"
-TASK_CONTEXT_TEMPLATE_PATH = "../data/templates/task_context.template"
+TASK_CONTEXT_NO_OPTION_TEMPLATE_PATH = "../data/templates/task_context_no_option.template"
+TASK_CONTEXT_WITH_OPTION_TEMPLATE_PATH = "../data/templates/task_context_with_option.template"
 
 COLORS = [chr(i) for i in range(ord("A"), ord("J") + 1)]
 

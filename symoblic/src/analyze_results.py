@@ -50,8 +50,8 @@ def analyze_results(result_path):
     }
 
     wandb.init(
-        project="Prequential-ICL",
         entity="dhanya-shridar",
+        project="Prequential-ICL",
         name=name,
         tags=["SYMBOLIC/pre-trained_llm"],
         config=params,
