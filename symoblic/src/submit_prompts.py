@@ -15,8 +15,13 @@ from xarc import generate_data_with_options as xarc_generate
 from utils import cross_entropy_loss, softmax
 
 
-def submit_prompts(model_name, n_tasks, n_samples, save_folder, seed, random=True):
-    tasks = np.random.choice(TASK_LIST, n_tasks) if random else TASK_LIST
+def submit_prompts(
+    model_name, n_tasks, n_samples, save_folder, seed, tasks=TASK_LIST, random=False, with_options=False
+):
+    if random:
+        np.random.seed(seed)
+        tasks = np.random.choice(TASK_LIST, n_tasks).tolist()
+
     model = Model._value2member_map_[model_name]
     llm = GPT(model=model, temperature=0, top_logprobs=20, max_tokens=20)
     logprob_tasks = []
@@ -31,19 +36,19 @@ def submit_prompts(model_name, n_tasks, n_samples, save_folder, seed, random=Tru
         os.mkdir(result_path)
 
     meta_data = {
-        "tasks": tasks.tolist(),
+        "tasks": tasks,
         "n_samples": n_samples,
         "n_tasks": n_tasks,
         "seed": seed,
         "model_name": model.value,
-        "prompt_type": "no_options",
+        "prompt_type": "with_options" if with_options else "no_options",
     }
     print("Saving metadata...")
     with open(os.path.join(result_path, "metadata.json"), "w+") as f:
         json.dump(meta_data, f)
     i = 0
     for task in xarc_generate(tasks=tasks, num_samples=n_samples, seed=seed):
-        prompts = generate_prompt(task, with_options=True)
+        prompts = generate_prompt(task, with_options=with_options)
         results, query_log = llm(prompts)
         y_true = list(zip(*task))[3]
         y_pred = [int(r["answer"]) for r in results]
@@ -68,6 +73,7 @@ if __name__ == "__main__":
     parser.add_argument("--n_samples", "-n", type=int, required=False)
     parser.add_argument("--seed", "-s", type=int, required=True)
     parser.add_argument("--save_folder", "-r", type=str, required=True)
+    parser.add_argument("--with_options", "-o", type=bool, required=False)
 
     args = parser.parse_args()
     model_name = args.model_name
@@ -75,4 +81,13 @@ if __name__ == "__main__":
     n_samples = args.n_samples
     seed = args.seed
     save_folder = args.save_folder
-    submit_prompts(model_name, n_tasks, n_samples, save_folder=save_folder, seed=seed)
+    with_options = args.with_options
+    submit_prompts(
+        model_name,
+        n_tasks,
+        n_samples,
+        save_folder=save_folder,
+        seed=seed,
+        random=True,
+        with_options=with_options,
+    )
