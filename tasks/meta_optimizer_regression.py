@@ -108,7 +108,11 @@ class MetaOptimizerExplicitForRegression(MetaOptimizerExplicit):
         n_context_points: tuple[int] | None = (1, 4, 10, 50),
         resolution: int = 100,
     ) -> None:
-        if self.logger is None or n_context_points is None:
+        if (
+            self.logger is None
+            or n_context_points is None
+            or not isinstance(self.trainer.datamodule.train_dataset, RegressionDataset)
+        ):
             return
 
         # Get the dataset

@@ -1,0 +1,20 @@
+name: "transition_matrix"
+
+train_dataset:
+  _target_: datasets.dynamical_systems.TransitionMatrixDynamicalSystem
+  dim: 3
+  x_dim: 30
+  y_dim: 30
+  n_tasks: 10000
+  n_samples: 1000
+  noise: 0.0
+  shuffle_samples: True
+val_dataset:
+  _target_: ${dataset.train_dataset._target_}
+  dim: ${dataset.train_dataset.dim}
+  x_dim: ${dataset.train_dataset.x_dim}
+  y_dim: ${dataset.train_dataset.y_dim}
+  n_tasks: 1000
+  n_samples: ${dataset.train_dataset.n_samples}
+  noise: ${dataset.train_dataset.noise}
+  shuffle_samples: ${dataset.train_dataset.shuffle_samples}
