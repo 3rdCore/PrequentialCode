@@ -30,4 +30,4 @@ task:
     n_layers: 4
     n_heads: 4
   predictor: ${predictor}
-  probe_n_context_points: [1, 5, 50, 500]
+  probe_n_context_points: [1, 5, 50]

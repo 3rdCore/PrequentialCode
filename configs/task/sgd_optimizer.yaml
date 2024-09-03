@@ -8,7 +8,7 @@ task_name: "sgd_optimizer"
 
 datamodule:
   _target_: datasets.interfaces.AtomicICLDataModule
-  batch_size: 32
+  batch_size: 1
   dataset: ${dataset.train_dataset}
 
 trainer:
