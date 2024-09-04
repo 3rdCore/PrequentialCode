@@ -233,6 +233,8 @@ class RNNSeq2Seq(nn.Module):
         )
         self.pred = nn.Linear(h_dim, dim)
 
+        self.initial_params = {n: v.clone().detach() for n, v in self.named_parameters()}
+
     @beartype
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         batch_size = x.size(0)
@@ -242,3 +244,7 @@ class RNNSeq2Seq(nn.Module):
         y, _ = self.decoder.forward(input, h)
         y = self.pred(y)
         return y.view(batch_size, -1)
+
+    def weight_init(self):
+        for n, p in self.named_parameters():
+            p.data = self.initial_params[n].clone().detach().to(p.device)
