@@ -1,0 +1,16 @@
+name: "mastermind"
+
+train_dataset:
+  _target_: datasets.symbolic.Mastermind
+  code_length: 8
+  num_colours: 6
+  n_tasks: 10000
+  n_samples: 1000
+  shuffle_samples: True
+val_dataset:
+  _target_: datasets.symbolic.Mastermind
+  code_length: ${dataset.train_dataset.code_length}
+  num_colours: ${dataset.train_dataset.num_colours}
+  n_tasks: 1000
+  n_samples: ${dataset.train_dataset.n_samples}
+  shuffle_samples: ${dataset.train_dataset.shuffle_samples}

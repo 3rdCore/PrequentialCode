@@ -42,3 +42,13 @@ def torch_pca(x: torch.FloatTensor, center: bool = True, percent: bool = False):
     if percent:
         explained_variance = explained_variance / explained_variance.sum()
     return components, explained_variance
+
+
+def bincount_batched(x, max_val):
+    # bincount along any dimension
+    # c.f. https://github.com/pytorch/pytorch/issues/32306
+    assert x.dtype is torch.int64, "only integral (int64) tensor is supported"
+    cnt = x.new_zeros(*x.shape[:-1], max_val)
+    # no scalar or broadcasting `src` support yet
+    # c.f. https://github.com/pytorch/pytorch/issues/5740
+    return cnt.scatter_add_(dim=-1, index=x, src=x.new_ones(()).expand_as(x))
