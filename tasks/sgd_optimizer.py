@@ -91,6 +91,9 @@ class StandardOptimizerForRegression(LightningModule):
         super().on_train_epoch_end()
         self.current_inner_epochs += 1
 
+        if self.current_inner_epochs >= self.hparams.inner_epochs:
+            self.on_atomic_fit_end()
+
     @beartype
     @torch.no_grad()
     def on_atomic_fit_end(self) -> None:

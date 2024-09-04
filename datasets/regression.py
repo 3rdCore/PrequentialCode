@@ -447,4 +447,7 @@ class TchebyshevRegression(RegressionDataset):
             T.append(Tn)
         T = torch.stack(T, dim=-1)
         y = torch.einsum("ndy,ntyd->nty", coeffs, T)
+        mean = y.mean(dim=0, keepdim=True)  # ugly normalization
+        std = y.std(dim=0, keepdim=True)
+        y = (y - mean) / std
         return y
