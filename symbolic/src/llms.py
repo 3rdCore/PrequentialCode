@@ -100,7 +100,7 @@ class BaseLLM(ABC):
         self.model_id = model_id
 
     def __call__(self, prompts):
-        return self._query(prompts)
+        return self._query2(prompts)
 
     @abstractmethod
     def _query(self, prompts):
@@ -138,6 +138,7 @@ class GPT(BaseLLM):
             messages.append(SystemMessage(content=system_message))
             messages.append(HumanMessage(content=context_message))
             messages.append(HumanMessage(content=query))
+            print(len(system_message), len(context_message), len(query))
             for j in range(n_retry + 1):
                 response = self.llm(messages)
                 value, valid, retry_message = parse_response(response, j != 0)
@@ -160,5 +161,50 @@ class GPT(BaseLLM):
                 warn(msg, RuntimeWarning)
                 logprobs = None
             results.append({"answer": value, "logprobs": logprobs, "response": response})
+        query_log = (success_no_retry, success_retry, failure)
+        return results, query_log
+
+    def _query2(self, prompts, n_retry=10):
+        results = []
+        success, success_retry, failure = 0, 0, 0
+        system_message = prompts["system"]
+        context_message = ""
+        contexts = prompts["context"]
+        queries = prompts["query"]
+        success_no_retry, success_retry, failure = 0, 0, 0
+        for i, context in tqdm(enumerate(contexts), total=len(contexts), desc="Prompts: "):
+            context_message += context
+            query_results = []
+            with open(f"../experiments/results/logs/context_{i}.txt", "w") as f:
+                f.write(context_message)
+
+            for j, query in enumerate(queries):
+                messages = []
+                messages.append(SystemMessage(content=system_message))
+                messages.append(HumanMessage(content=context_message))
+                messages.append(HumanMessage(content=query))
+                for j in range(n_retry + 1):
+                    response = self.llm(messages)
+                    value, valid, retry_message = parse_response(response, j != 0)
+                    if valid:
+                        success_no_retry += int(j == 0)
+                        success_retry += int(j != 0)
+                        logprobs = get_logprobs(response, value)
+                        # if not all_tokens_present:
+                        #     msg = f"Error - query {i} failed. Not all tokens present in logprobs."
+                        #     warn(msg, RuntimeWarning)
+                        #     continue
+                        break
+                    msg = f"Query {i} failed. Retrying {j+1}/{n_retry}.\n[LLM]:\n{response.content}\n[User]:\n{retry_message}"
+                    warn(msg, RuntimeWarning)
+
+                if not valid:
+                    failure += 1
+                    value = "err"
+                    msg = f"Error - query {i} failed. Could not parse response after {n_retry} retries."
+                    warn(msg, RuntimeWarning)
+                    logprobs = None
+                query_results.append({"answer": value, "logprobs": logprobs, "response": response})
+            results.append(query_results)
         query_log = (success_no_retry, success_retry, failure)
         return results, query_log
