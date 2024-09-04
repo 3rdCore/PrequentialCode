@@ -109,16 +109,13 @@ class Mastermind(SymbolicDataset):
         )
 
     def sample_x(self, n_tasks: int, n_samples: int) -> LongTensor:
-        all_codes = list(product(range(6), repeat=8))
-        all_codes = torch.tensor(all_codes)
-        x = []
-        for _ in range(n_tasks):
-            x.append(all_codes[torch.randperm(len(all_codes))[:n_samples]])
-        x = torch.stack(x)
+        x = torch.randint(0, self.num_colours, (n_tasks, n_samples, self.code_length))
         return x
 
     def sample_task_params(self, n_tasks: int | None = None) -> dict[str, Tensor]:
-        code = torch.randint(low=0, high=self.num_colours - 1, size=(n_tasks, self.code_length))
+        code = torch.randint(
+            low=0, high=self.num_colours - 1, size=(n_tasks, self.code_length)
+        )
         return {"code": code}
 
     def function(self, x: LongTensor, params: dict[str, Tensor]) -> LongTensor:
