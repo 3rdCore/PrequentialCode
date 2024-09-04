@@ -151,38 +151,40 @@ class MetaOptimizerExplicit(ABC, LightningModule):
             ) = self.forward(x)
             loss_train = self.loss_function(x_train, preds_train)
             loss_nexttoken = self.loss_function(x_nexttoken, preds_nexttoken)
-            x_ood = {name: x_nexttoken[f"{name}_ood"].to(self.device) for name in ["x", "y"]}
-            preds_ood = self.predictor.forward(x_ood, z)
-            loss_ood = self.loss_function(x_ood, preds_ood)
-
-            loss_train, loss_nexttoken, loss_ood = (
+            loss_train, loss_nexttoken = (
                 loss_train.sum(dim=-1) / num_tasks,
                 loss_nexttoken.sum(dim=-1) / num_tasks,
-                loss_ood.sum(dim=-1) / num_tasks,
             )
-
             if n_sample_loss_train is None:
                 n_sample_loss_train = loss_train
                 n_sample_loss_nexttoken = loss_nexttoken
-                n_sample_loss_ood = loss_ood
             else:
                 n_sample_loss_train += loss_train
                 n_sample_loss_nexttoken += loss_nexttoken
-                n_sample_loss_ood += loss_ood
+
+            if self.has_ood:
+                x_ood = {name: x_nexttoken[f"{name}_ood"].to(self.device) for name in ["x", "y"]}
+                preds_ood = self.predictor.forward(x_ood, z)
+                loss_ood = self.loss_function(x_ood, preds_ood)
+                loss_ood = (loss_ood.sum(dim=-1) / num_tasks,)
+                if n_sample_loss_train is None:
+                    n_sample_loss_ood = loss_ood
+                else:
+                    n_sample_loss_ood += loss_ood
 
         for i in range(len(n_sample_loss_train)):
             n_samples = i + self.hparams.min_train_samples
             l_train_i = n_sample_loss_train[i].cpu()
             l_nexttoken_i = n_sample_loss_nexttoken[i].cpu()
-            l_ood_i = n_sample_loss_ood[i].cpu()
-            self.logger.experiment.log(
-                {
-                    "n_samples": n_samples,
-                    f"{mode}/n_sample_loss_train": l_train_i,
-                    f"{mode}/n_sample_loss_nexttoken": l_nexttoken_i,
-                    f"{mode}/n_sample_loss_ood": l_ood_i,
-                }
-            )
+            n_sample_log = {
+                "n_samples": n_samples,
+                f"{mode}/n_sample_loss_train": l_train_i,
+                f"{mode}/n_sample_loss_nexttoken": l_nexttoken_i,
+            }
+            if self.has_ood:
+                l_ood_i = n_sample_loss_ood[i].cpu()
+                n_sample_log.update({f"{mode}/n_sample_loss_ood": l_ood_i})
+            self.logger.experiment.log(n_sample_log)
 
     @torch.inference_mode()
     def log_effective_zdim(self, mode: Literal["train_tasks", "val_tasks"]):
@@ -268,6 +270,13 @@ class MetaOptimizerExplicit(ABC, LightningModule):
 
     def configure_optimizers(self):
         return torch.optim.Adam(self.parameters(), lr=self.hparams.lr)
+
+    @property
+    def has_ood(self) -> bool:
+        return (
+            hasattr(self.trainer.datamodule.train_dataset, "has_ood")
+            and self.trainer.datamodule.train_dataset.has_ood
+        )
 
 
 class MetaOptimizerImplicit(ABC, LightningModule):

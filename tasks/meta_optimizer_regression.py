@@ -77,10 +77,7 @@ class MetaOptimizerExplicitForRegression(MetaOptimizerExplicit):
         mode = "train_tasks" if self.training else "val_tasks"
         num_tasks = preds_train[list(preds_train.keys())[0]].shape[1]
 
-        if (
-            hasattr(self.trainer.datamodule.train_dataset, "has_ood")
-            and self.trainer.datamodule.train_dataset.has_ood
-        ):
+        if self.has_ood:
             x_ood = {name: x_nexttoken[f"{name}_ood"].to(self.device) for name in ["x", "y"]}
             with torch.inference_mode():
                 preds_ood = self.predictor.forward(x_ood, z)
