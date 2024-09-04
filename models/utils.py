@@ -210,8 +210,9 @@ class RNNSeq2Seq(nn.Module):
         dim: int,
         x_len: int,
         y_len: int,
-        h_dim: int,
-        nonlinearity: str = "none",
+        h_dim: int = 128,
+        nonlinearity: str = "tanh",
+        **kwargs,
     ) -> None:
         super().__init__()
         self.dim = dim
@@ -240,4 +241,4 @@ class RNNSeq2Seq(nn.Module):
         input = torch.zeros(batch_size, self.y_len, self.dim).to(x.device)
         y, _ = self.decoder.forward(input, h)
         y = self.pred(y)
-        return y
+        return y.view(batch_size, -1)

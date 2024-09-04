@@ -1,0 +1,6 @@
+_target_: models.utils.RNNSeq2Seq
+dim: ${datamodule.dataset.dim}
+x_len: 20
+y_len: 20
+h_dim: 128
+nonlinearity: "tanh"
