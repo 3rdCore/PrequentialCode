@@ -69,7 +69,12 @@ class ODE(SyntheticDataset):
         x = x.flatten(start_dim=2)  # (n_tasks, n_samples, (x_len + y_len) * dim)
         x, y = x.split([self.dim * self.x_len, self.dim * self.y_len], dim=-1)
 
-        return {"x": x, "y": y}, params
+        return {
+            "x": x,
+            "y": y,
+            "x_ood": x,
+            "y_ood": y,
+        }, params  # OoD here is temporary, have to fix it to truly be OOD
 
     @abstractmethod
     def sample_task_params(self, n_tasks: int | None = None) -> dict[str, Tensor]:

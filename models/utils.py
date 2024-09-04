@@ -168,7 +168,12 @@ def fastfood_torched_batched(
 class MLP(nn.Module):
     @beartype
     def __init__(
-        self, in_features: int, h_dim: int, n_layers: int, out_features: int, dropout_rate: float = 0.0
+        self,
+        in_features: int,
+        h_dim: int,
+        n_layers: int,
+        out_features: int,
+        dropout_rate: float = 0.0,
     ):
         super().__init__()
         self.layers = nn.ModuleList()
@@ -196,3 +201,43 @@ class MLP(nn.Module):
         for i, layer in enumerate(self.layers):
             layer.weight.data = self.initial_weights[i].clone().detach().to(layer.weight.device)
             layer.bias.data = self.initial_biases[i].clone().detach().to(layer.bias.device)
+
+
+class RNNSeq2Seq(nn.Module):
+    @beartype
+    def __init__(
+        self,
+        dim: int,
+        x_len: int,
+        y_len: int,
+        h_dim: int,
+        nonlinearity: str = "none",
+    ) -> None:
+        super().__init__()
+        self.dim = dim
+        self.x_len = x_len
+        self.y_len = y_len
+
+        self.encoder = nn.RNN(
+            dim,
+            h_dim,
+            nonlinearity=nonlinearity,
+            batch_first=True,
+        )
+        self.decoder = nn.RNN(
+            dim,
+            h_dim,
+            nonlinearity=nonlinearity,
+            batch_first=True,
+        )
+        self.pred = nn.Linear(h_dim, dim)
+
+    @beartype
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        batch_size = x.size(0)
+        x = x.view(batch_size, self.x_len, self.dim)
+        _, h = self.encoder.forward(x)
+        input = torch.zeros(batch_size, self.y_len, self.dim).to(x.device)
+        y, _ = self.decoder.forward(input, h)
+        y = self.pred(y)
+        return y
