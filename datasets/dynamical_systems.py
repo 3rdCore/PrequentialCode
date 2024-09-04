@@ -140,5 +140,4 @@ class TransitionMatrix(ODE):
     def dynamics(self, xt: Tensor, params: dict[str, Tensor]) -> FloatTensor:
         w = params["w"]
         dxdt = torch.einsum("bsx,bxy->bsy", xt, w)
-        dxdt = self.nonlinearity(dxdt)
         return dxdt

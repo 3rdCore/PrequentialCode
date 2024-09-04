@@ -1,3 +1,5 @@
+from typing import Any
+
 import numpy as np
 import torch
 from beartype import beartype
@@ -248,3 +250,38 @@ class RNNSeq2Seq(nn.Module):
     def weight_init(self):
         for n, p in self.named_parameters():
             p.data = self.initial_params[n].clone().detach().to(p.device)
+
+
+class VectorField(nn.Module):
+    @beartype
+    def __init__(
+        self,
+        dim: int,
+        y_len: int,
+        nonlinearity: Any = nn.Identity(),
+        dt: float = 0.01,
+        **kwargs,
+    ) -> None:
+        super().__init__()
+        self.dim = dim
+        self.y_len = y_len
+        self.nonlinearity = nonlinearity
+        self.dt = dt
+
+        self.w = nn.Parameter(torch.randn(dim, dim))
+
+        self.initial_w = self.w.clone().detach()
+
+    @beartype
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        x = x[:, -self.dim :]  # Only current state matters
+        y = []
+        for _ in range(self.y_len):
+            x = x + self.dt * (x @ self.w)
+            x = self.nonlinearity(x)
+            y.append(x)
+        y = torch.cat(y, dim=1)
+        return y
+
+    def weight_init(self):
+        self.w.data = self.initial_w.clone().detach().to(self.w.device)

@@ -1,0 +1,4 @@
+_target_: models.utils.VectorField
+dim: ${datamodule.dataset.dim}
+y_len: 20
+dt: ${datamodule.dataset.dt}
