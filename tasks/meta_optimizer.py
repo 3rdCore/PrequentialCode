@@ -170,7 +170,7 @@ class MetaOptimizerExplicit(ABC, LightningModule):
                 x_ood = {name: x_nexttoken[f"{name}_ood"].to(self.device) for name in ["x", "y"]}
                 preds_ood = self.predictor.forward(x_ood, z)
                 loss_ood = self.loss_function(x_ood, preds_ood)
-                loss_ood = (loss_ood.sum(dim=-1) / num_tasks,)
+                loss_ood = loss_ood.sum(dim=-1) / num_tasks
                 if n_sample_loss_ood is None:
                     n_sample_loss_ood = loss_ood
                 else:
