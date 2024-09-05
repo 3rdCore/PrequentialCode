@@ -114,7 +114,7 @@ class StandardOptimizer(LightningModule):
         for data, _ in dl:
             x, y = (data["x"].to(self.device), data[self.hparams.y_key].to(self.device))
             preds = self.forward(x)
-            l = self.loss_fn(y, preds)
+            l = self.loss_fn(preds, y)
             loss_train += l.item() * x.size(0)
             total_train_samples += x.size(0)
             if self.has_ood:
@@ -122,14 +122,14 @@ class StandardOptimizer(LightningModule):
                     self.device
                 )
                 preds_ood = self.forward(x_ood)
-                l_ood = self.loss_fn(y_ood, preds_ood)
+                l_ood = self.loss_fn(preds_ood, y_ood)
                 loss_ood += l_ood.item() * x_ood.size(0)
 
         dl = self.trainer.datamodule.val_dataloader()
         for data, _ in dl:
             x, y = (data["x"].to(self.device), data[self.hparams.y_key].to(self.device))
             preds = self.forward(x)
-            l = (self.loss_fn(y, preds),)
+            l = self.loss_fn(preds, y)
             loss_eval += l.item() * x.size(0)
             total_eval_samples += x.size(0)
             if self.has_ood:
@@ -137,7 +137,7 @@ class StandardOptimizer(LightningModule):
                     self.device
                 )
                 preds_ood = self.forward(x_ood)
-                l_ood = self.loss_fn(y_ood, preds_ood)
+                l_ood = self.loss_fn(preds_ood, y_ood)
                 loss_ood += l_ood.item() * x_ood.size(0)
 
         l_train_i = loss_train / total_train_samples
