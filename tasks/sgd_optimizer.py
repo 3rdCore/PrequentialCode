@@ -1,26 +1,17 @@
-import math
 import random
-from copy import deepcopy
-from typing import Iterable, Literal
+from typing import Literal
 
-import numpy as np
 import torch
 from beartype import beartype
 from lightning import LightningModule, Trainer
 from lightning.pytorch.callbacks.early_stopping import EarlyStopping
 from torch import Tensor
-from torch.nn import Module, ModuleList, MSELoss
-from torch.nn import functional as F
+from torch.nn import Module, MSELoss
 from torch.nn.modules.loss import _Loss
 from torch.optim import Optimizer
-from torch.utils.data import DataLoader, TensorDataset
-from typing_extensions import override
-
-from models.context_aggregator import ContextAggregator
-from models.predictor import Predictor
 
 
-class StandardOptimizerForRegression(LightningModule):
+class StandardOptimizer(LightningModule):
     @beartype
     def __init__(
         self,
@@ -48,7 +39,7 @@ class StandardOptimizerForRegression(LightningModule):
 
     @beartype
     def training_step(self, data, batch_idx) -> Tensor:
-        data, task_params = data
+        data, _ = data
         x, y = data["x"], data[self.hparams.y_key]
         preds = self.forward(x)
 
@@ -112,7 +103,6 @@ class StandardOptimizerForRegression(LightningModule):
         self.trainer.optimizers = [self.configure_optimizers()]
         del self.trainer.callback_metrics["train_loss"]
         del self.trainer.callback_metrics["val_loss"]
-        # self.trainer._run_sanity_check()
 
     @torch.inference_mode()
     def log_loss_vs_nsamples(self) -> None:
@@ -122,43 +112,45 @@ class StandardOptimizerForRegression(LightningModule):
         total_train_samples, total_eval_samples = 0, 0
         dl = self.trainer.datamodule.train_dataloader()
         for data, _ in dl:
-            x, y, x_ood, y_ood = (
-                data["x"].to(self.device),
-                data[self.hparams.y_key].to(self.device),
-                data["x_ood"].to(self.device),
-                data[f"{self.hparams.y_key}_ood"].to(self.device),
-            )
-            preds, preds_ood = self.forward(x), self.forward(x_ood)
-            l, l_ood = self.loss_fn(y, preds), self.loss_fn(y_ood, preds_ood)
+            x, y = (data["x"].to(self.device), data[self.hparams.y_key].to(self.device))
+            preds = self.forward(x)
+            l = self.loss_fn(y, preds)
             loss_train += l.item() * x.size(0)
-            loss_ood += l_ood.item() * x_ood.size(0)
             total_train_samples += x.size(0)
+            if self.has_ood:
+                x_ood, y_ood = data["x_ood"].to(self.device), data[f"{self.hparams.y_key}_ood"].to(
+                    self.device
+                )
+                preds_ood = self.forward(x_ood)
+                l_ood = self.loss_fn(y_ood, preds_ood)
+                loss_ood += l_ood.item() * x_ood.size(0)
 
         dl = self.trainer.datamodule.val_dataloader()
         for data, _ in dl:
-            x, y, x_ood, y_ood = (
-                data["x"].to(self.device),
-                data[self.hparams.y_key].to(self.device),
-                data["x_ood"].to(self.device),
-                data[f"{self.hparams.y_key}_ood"].to(self.device),
-            )
-            preds, preds_ood = self.forward(x), self.forward(x_ood)
-            l, l_ood = self.loss_fn(y, preds), self.loss_fn(y_ood, preds_ood)
+            x, y = (data["x"].to(self.device), data[self.hparams.y_key].to(self.device))
+            preds = self.forward(x)
+            l = (self.loss_fn(y, preds),)
             loss_eval += l.item() * x.size(0)
-            loss_ood += l_ood.item() * x_ood.size(0)
             total_eval_samples += x.size(0)
+            if self.has_ood:
+                x_ood, y_ood = data["x_ood"].to(self.device), data[f"{self.hparams.y_key}_ood"].to(
+                    self.device
+                )
+                preds_ood = self.forward(x_ood)
+                l_ood = self.loss_fn(y_ood, preds_ood)
+                loss_ood += l_ood.item() * x_ood.size(0)
 
         l_train_i = loss_train / total_train_samples
         l_nexttoken_i = loss_eval / total_eval_samples
-        loss_ood_i = loss_ood / (total_train_samples + total_eval_samples)
-        self.logger.experiment.log(
-            {
-                "n_samples": total_train_samples + total_eval_samples,
-                "val_tasks/n_sample_loss_train": l_train_i,
-                "val_tasks/n_sample_loss_nexttoken": l_nexttoken_i,
-                "val_tasks/n_sample_loss_ood": loss_ood_i,
-            }
-        )
+        logs = {
+            "n_samples": total_train_samples + total_eval_samples,
+            "val_tasks/n_sample_loss_train": l_train_i,
+            "val_tasks/n_sample_loss_nexttoken": l_nexttoken_i,
+        }
+        if self.has_ood:
+            loss_ood_i = loss_ood / (total_train_samples + total_eval_samples)
+            logs.update({"val_tasks/n_sample_loss_ood": loss_ood_i})
+        self.logger.experiment.log(logs)
 
     @beartype
     def prepare_to_fit_new_task(self, trainer) -> None:
@@ -169,6 +161,10 @@ class StandardOptimizerForRegression(LightningModule):
         )  # trainer.datamodule.dataset.n_samples is the original number of samples (before truncating)
         trainer.datamodule.switch_task(n_samples=n_samples)
         batch_size = self.trainer.datamodule.hparams["batch_size"]
+
+    @property
+    def has_ood(self) -> bool:
+        return hasattr(self.trainer.datamodule.dataset, "has_ood") and self.trainer.datamodule.dataset.has_ood
 
 
 class CustomEarlyStopping(EarlyStopping):

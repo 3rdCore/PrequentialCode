@@ -17,7 +17,7 @@ trainer:
   reload_dataloaders_every_n_epochs: 1
 
 task:
-  _target_: tasks.sgd_optimizer.StandardOptimizerForRegression
+  _target_: tasks.sgd_optimizer.StandardOptimizer
   inner_epochs: 100
   predictor: ${predictor}
   min_train_samples: 1
@@ -26,6 +26,8 @@ task:
   n_fit_total: 1000
   regularization_type: null
   lambda_reg: 1e-3
+  loss_fn:
+    _target_: torch.nn.MSELoss
 
 callbacks:
   _target_: tasks.sgd_optimizer.CustomEarlyStopping

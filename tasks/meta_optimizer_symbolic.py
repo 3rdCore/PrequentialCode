@@ -7,6 +7,7 @@ from models.context_aggregator import ContextAggregator
 from models.implicit import ImplicitModel
 from models.predictor import Predictor
 from tasks.meta_optimizer import MetaOptimizerExplicit, MetaOptimizerImplicit
+from utils import CrossEntropyLossFlat
 
 
 class MetaOptimizerExplicitForSymbolic(MetaOptimizerExplicit):
@@ -17,7 +18,7 @@ class MetaOptimizerExplicitForSymbolic(MetaOptimizerExplicit):
         predictor: Predictor,
         min_train_samples: int = 1,
         lr: float = 1e-3,
-        loss_fn: _Loss = CrossEntropyLoss(reduction="none"),
+        loss_fn: _Loss = CrossEntropyLossFlat(reduction="none"),
     ):
         super().__init__(
             meta_objective=meta_objective,
@@ -41,9 +42,7 @@ class MetaOptimizerExplicitForSymbolic(MetaOptimizerExplicit):
         assert len(preds) == 1, "Only one output key supported for symbolic tasks"
         y_key = list(preds.keys())[0]
         target, preds = target[y_key], preds[y_key]
-        preds = preds.view(*target.shape, -1)
-        loss = self.loss_fn(preds.view(-1, preds.shape[-1]), target.view(-1))
-        loss = loss.view_as(target)
+        loss = self.loss_fn(preds, target)
         return torch.mean(loss, dim=-1)
 
 
@@ -53,7 +52,7 @@ class MetaOptimizerImplicitForSymbolic(MetaOptimizerImplicit):
         model: ImplicitModel,
         min_train_samples: int = 1,
         lr: float = 1e-3,
-        loss_fn: _Loss = CrossEntropyLoss(reduction="none"),
+        loss_fn: _Loss = CrossEntropyLossFlat(reduction="none"),
     ):
         super().__init__(model=model, min_train_samples=min_train_samples, lr=lr)
 
@@ -71,7 +70,5 @@ class MetaOptimizerImplicitForSymbolic(MetaOptimizerImplicit):
         assert len(preds) == 1, "Only one output key supported for symbolic tasks"
         y_key = list(preds.keys())[0]
         target, preds = target[y_key], preds[y_key]
-        preds = preds.view(*target.shape, -1)
-        loss = self.loss_fn(preds.view(-1, preds.shape[-1]), target.view(-1))
-        loss = loss.view_as(target)
+        loss = self.loss_fn(preds, target)
         return torch.mean(loss, dim=-1)
