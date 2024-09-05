@@ -167,7 +167,7 @@ class MetaOptimizerExplicit(ABC, LightningModule):
                 preds_ood = self.predictor.forward(x_ood, z)
                 loss_ood = self.loss_function(x_ood, preds_ood)
                 loss_ood = (loss_ood.sum(dim=-1) / num_tasks,)
-                if n_sample_loss_train is None:
+                if n_sample_loss_ood is None:
                     n_sample_loss_ood = loss_ood
                 else:
                     n_sample_loss_ood += loss_ood
