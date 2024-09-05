@@ -139,7 +139,11 @@ class MetaOptimizerExplicit(ABC, LightningModule):
             dl = self.trainer.datamodule.val_dataloader()
 
         num_tasks = len(dl.dataset)
-        n_sample_loss_train, n_sample_loss_nexttoken = None, None
+        n_sample_loss_train, n_sample_loss_nexttoken, n_sample_loss_ood = (
+            None,
+            None,
+            None,
+        )
         for x, _ in dl:
             x = {name: x[name].to(self.device) for name in x}
             (
