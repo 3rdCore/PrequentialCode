@@ -156,9 +156,11 @@ class StandardOptimizer(LightningModule):
     def prepare_to_fit_new_task(self, trainer) -> None:
         """Sample a new task and update the dataloaders."""
 
-        n_samples = random.randint(
-            self.hparams.min_train_samples, trainer.datamodule.dataset.n_samples
-        )  # trainer.datamodule.dataset.n_samples is the original number of samples (before truncating)
+        log_min_samples = torch.log(torch.tensor(self.hparams.min_train_samples, dtype=torch.float))
+        log_max_samples = torch.log(torch.tensor(trainer.datamodule.dataset.n_samples, dtype=torch.float))
+        n_samples = int(
+            torch.exp(torch.distributions.Uniform(log_min_samples, log_max_samples).sample()).item()
+        )
         trainer.datamodule.switch_task(n_samples=n_samples)
         batch_size = self.trainer.datamodule.hparams["batch_size"]
 
