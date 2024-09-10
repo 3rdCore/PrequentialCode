@@ -25,7 +25,7 @@ task:
   train_val_prop: 0.8
   n_fit_total: 1000
   regularization_type: null
-  lambda_reg: 1e-3
+  lambda_reg: null
   loss_fn:
     _target_: torch.nn.MSELoss
 
