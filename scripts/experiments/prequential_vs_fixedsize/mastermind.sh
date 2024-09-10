@@ -1,4 +1,4 @@
-FIXED_SIZES=(3 9 30)
+FIXED_SIZES=(3 9 30 90 900)
 
 for FIXED_SIZE in ${FIXED_SIZES[@]}; do
     python train.py --multirun hydra/launcher=mila_eric save_dir=/home/mila/e/eric.elmoznino/scratch/prequential_icl/logs task=meta_optimizer_symbolic ++task.meta_objective=prequential ++task.context_aggregator.x_dim=50 ++predictor.x_dim=48 ++predictor.y_dim=18 \
