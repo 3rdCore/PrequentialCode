@@ -1,5 +1,4 @@
 from abc import abstractmethod
-from itertools import product
 from typing import Iterable
 
 import torch
@@ -44,6 +43,7 @@ class SymbolicDataset(SyntheticDataset):
         task_dict_params = self.sample_task_params(self.n_tasks)
         y = self.function(x, task_dict_params)
         x = F.one_hot(x, self.x_num_vals).float().flatten(start_dim=-2)
+        y = F.one_hot(y, self.y_num_vals).float().flatten(start_dim=-2)
         return {"x": x, "y": y}, task_dict_params
 
     @beartype
@@ -100,9 +100,9 @@ class Mastermind(SymbolicDataset):
         self.num_colours = num_colours
         super().__init__(
             x_num_vars=code_length,
-            y_num_vars=code_length,
+            y_num_vars=2,
             x_num_vals=num_colours,
-            y_num_vals=num_colours,
+            y_num_vals=code_length + 1,  # Includes 0
             n_tasks=n_tasks,
             n_samples=n_samples,
             shuffle_samples=shuffle_samples,
@@ -113,9 +113,7 @@ class Mastermind(SymbolicDataset):
         return x
 
     def sample_task_params(self, n_tasks: int | None = None) -> dict[str, Tensor]:
-        code = torch.randint(
-            low=0, high=self.num_colours - 1, size=(n_tasks, self.code_length)
-        )
+        code = torch.randint(low=0, high=self.num_colours - 1, size=(n_tasks, self.code_length))
         return {"code": code}
 
     def function(self, x: LongTensor, params: dict[str, Tensor]) -> LongTensor:

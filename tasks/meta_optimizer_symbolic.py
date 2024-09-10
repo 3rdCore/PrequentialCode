@@ -3,6 +3,7 @@ from torch import Tensor
 from torch.nn import CrossEntropyLoss
 from torch.nn.modules.loss import _Loss
 
+from datasets.symbolic import SymbolicDataset
 from models.context_aggregator import ContextAggregator
 from models.implicit import ImplicitModel
 from models.predictor import Predictor
@@ -42,8 +43,14 @@ class MetaOptimizerExplicitForSymbolic(MetaOptimizerExplicit):
         assert len(preds) == 1, "Only one output key supported for symbolic tasks"
         y_key = list(preds.keys())[0]
         target, preds = target[y_key], preds[y_key]
+        target = target.view(target.shape[0], target.shape[1], self.y_num_vars, -1).argmax(dim=-1)
         loss = self.loss_fn(preds, target)
         return torch.mean(loss, dim=-1)
+
+    @property
+    def y_num_vars(self) -> int:
+        dataset: SymbolicDataset = self.trainer.datamodule.train_dataset
+        return dataset.y_num_vars
 
 
 class MetaOptimizerImplicitForSymbolic(MetaOptimizerImplicit):
@@ -70,5 +77,11 @@ class MetaOptimizerImplicitForSymbolic(MetaOptimizerImplicit):
         assert len(preds) == 1, "Only one output key supported for symbolic tasks"
         y_key = list(preds.keys())[0]
         target, preds = target[y_key], preds[y_key]
+        target = target.view(target.shape[0], target.shape[1], self.y_num_vars, -1).argmax(dim=-1)
         loss = self.loss_fn(preds, target)
         return torch.mean(loss, dim=-1)
+
+    @property
+    def y_num_vars(self) -> int:
+        dataset: SymbolicDataset = self.trainer.datamodule.train_dataset
+        return dataset.y_num_vars
