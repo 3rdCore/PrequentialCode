@@ -24,10 +24,14 @@ class StandardOptimizer(LightningModule):
         loss_fn: _Loss = MSELoss(),
         n_fit_total=1000,
         regularization_type: Literal["L1", "L2", None] = None,
-        lambda_reg: float = 0.0,
+        lambda_reg: float | None = None,
     ):
         super().__init__()
-        self.save_hyperparameters(ignore=["optimizer", "loss_fn"])
+        if regularization_type in ["L1", "L2"] and lambda_reg == None:
+            lambda_reg = 1e-3
+
+        hparams = {k: v for k, v in locals().items() if v is not None}
+        self.save_hyperparameters(hparams, ignore=["optimizer", "loss_fn"])
         self.current_inner_epochs = 0
         self.predictor = predictor
         self.loss_fn = loss_fn
@@ -45,12 +49,12 @@ class StandardOptimizer(LightningModule):
 
         loss = self.loss_fn(preds, y)
 
-        if self.hparams.regularization_type == "L1":
-            loss += self.hparams.lambda_reg * sum(torch.norm(param, 1) for param in self.parameters())
-        elif self.hparams.regularization_type == "L2":
-            loss += self.hparams.lambda_reg * sum(torch.norm(param, 2) for param in self.parameters())
-        else:
-            pass  # No regularization
+        # Check if regularization_type exists in self.hparams
+        if hasattr(self.hparams, "regularization_type"):
+            if self.hparams.regularization_type == "L1":
+                loss += self.hparams.lambda_reg * sum(torch.norm(param, 1) for param in self.parameters())
+            elif self.hparams.regularization_type == "L2":
+                loss += self.hparams.lambda_reg * sum(torch.norm(param, 2) for param in self.parameters())
 
         self.log("train_loss", loss, prog_bar=True, on_step=False, on_epoch=True)
 
