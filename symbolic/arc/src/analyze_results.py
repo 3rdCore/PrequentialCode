@@ -30,6 +30,7 @@ def analyze_results(result_path, avg_across_tasks):
     logprobs = np.array(logprobs)
     logprobs = softmax(logprobs)
     n_sample_loss, probs, probs_rand, results = compute_metrics(y_true, y_pred, logprobs, avg_across_tasks)
+    plot_results(y_true, y_pred, n_sample_loss, probs, result_path)
     pprint(results)
     with open(f"{result_path}/results.json", "w") as f:
         json.dump(results, f)
@@ -45,15 +46,11 @@ def analyze_results(result_path, avg_across_tasks):
     tasks = None if avg_across_tasks else metadata["tasks"]
     print(avg_across_tasks)
     log_results(y_true, n_sample_loss, probs, probs_rand, params, tasks=tasks)
-    plot_results(y_true, y_pred, logprobs, probs, result_path)
-    pprint(results)
     print("Done!")
 
 
 def compute_metrics(y_true, y_pred, logprobs, avg_across_tasks=False):
     print("Computing metrics...")
-    print("y_true:", y_true.shape, "y_pred", y_pred.shape, "logprobs", logprobs.shape)
-    print(y_true)
     n_sample_loss = cross_entropy_loss(y_true, logprobs, not avg_across_tasks)
     probs = np.exp(logprobs)
     probs_rand = np.random.rand(*probs.shape)
@@ -105,7 +102,9 @@ def plot_results(y_true, y_pred, n_sample_loss, probs, results_path):
     plt.savefig(os.path.join(results_path, "n_sample_loss.png"))
     plt.show()
 
-    plt.bar(x=np.arange(0, y_true.shape[1]), y=np.mean(y_true == y_pred, axis=0), capsize=5, color="skyblue")
+    plt.errorbar(
+        x=np.arange(0, y_true.shape[1]), y=np.mean(y_true == y_pred, axis=0), capsize=5, color="skyblue"
+    )
     plt.xlabel("Sample ")
     plt.ylabel("accuracy")
     plt.savefig(os.path.join(results_path, "accuracy.png"))

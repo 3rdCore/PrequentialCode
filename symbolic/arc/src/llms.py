@@ -175,9 +175,6 @@ class GPT(BaseLLM):
         for i, context in tqdm(enumerate(contexts), total=len(contexts), desc="Prompts: "):
             context_message += context
             query_results = []
-            with open(f"../experiments/results/logs/context_{i}.txt", "w") as f:
-                f.write(context_message)
-
             for j, query in enumerate(queries):
                 messages = []
                 messages.append(SystemMessage(content=system_message))
