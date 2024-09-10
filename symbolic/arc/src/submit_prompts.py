@@ -113,6 +113,12 @@ def submit_prompts_v2(
     i = 0
     for task in xarc_generate(tasks=tasks, num_samples=n_samples + n_queries, seed=seed):
         prompts = generate_prompt_v2(task, n_samples, n_queries, with_options=with_options)
+        # for i, context in enumerate(prompts["context"]):
+        #     with open(f"../experiments/results/logs/task=1/context_{i}.txt", "w") as f:
+        #         f.write(context)
+        # for i, query in enumerate(prompts["query"]):
+        #     with open(f"../experiments/results/logs/task=1/query_{i}.txt", "w") as f:
+        #         f.write(query)
         results, query_log = llm(prompts)
         y_true_tasks = list(zip(*task))[3][-5:]
         for i in range(len(results[0])):
@@ -177,6 +183,6 @@ if __name__ == "__main__":
         save_folder=save_folder,
         seed=seed,
         random=False,
-        tasks=["x1"],
+        tasks=["1"],
         with_options=with_options,
     )
