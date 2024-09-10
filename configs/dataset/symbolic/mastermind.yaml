@@ -5,7 +5,7 @@ train_dataset:
   code_length: 8
   num_colours: 6
   n_tasks: 10000
-  n_samples: 3000
+  n_samples: 1350
   shuffle_samples: True
 val_dataset:
   _target_: datasets.symbolic.Mastermind
