@@ -62,6 +62,8 @@ class AtomicICLDataModule(LightningDataModule):
     ):
         super().__init__()
         self.save_hyperparameters(ignore=["dataset"])
+        if hasattr(dataset, "shuffle_samples"):
+            self.dataset.shuffle_samples = False
         self.dataset = dataset
         self.train_dataset, self.val_dataset = shuffle_train_val_split(
             dataset, val_prop=self.hparams.val_prop
@@ -122,7 +124,10 @@ def shuffle_train_val_split(dataset, val_prop):
 
     train_dataset, val_dataset = copy.deepcopy(dataset), copy.deepcopy(dataset)
     train_dataset.data, val_dataset.data = train_data, val_data
-    train_dataset.n_samples, val_dataset.n_samples = dataset.n_samples - val_size, val_size
+    train_dataset.n_samples, val_dataset.n_samples = (
+        dataset.n_samples - val_size,
+        val_size,
+    )
 
     train_dataset = AtomicSyntheticDataset(train_dataset)
     val_dataset = AtomicSyntheticDataset(val_dataset)
