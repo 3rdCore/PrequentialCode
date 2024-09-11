@@ -98,7 +98,7 @@ class AtomicICLDataModule(LightningDataModule):
             self.train_dataset,
             batch_size=self.hparams.batch_size,
             num_workers=self.hparams.num_workers,
-            shuffle=True,
+            shuffle=False,
             collate_fn=None,
         )
 
