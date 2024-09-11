@@ -4,7 +4,7 @@ defaults:
   - predictor: null
   - _self_
 
-task_name: "meta_optimizer_implicit_symbolic"
+task_name: "meta_optimizer_implicit"
 
 datamodule:
   _target_: datasets.interfaces.ICLDataModule
