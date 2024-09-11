@@ -21,11 +21,13 @@ class SymbolicDataset(SyntheticDataset):
         n_tasks: int,
         n_samples: int,
         shuffle_samples: bool = True,
+        one_hot_y: bool = True,
     ):
         self.x_num_vars = x_num_vars
         self.y_num_vars = y_num_vars
         self.x_num_vals = x_num_vals
         self.y_num_vals = y_num_vals
+        self.one_hot_y = one_hot_y
 
         super().__init__(
             n_tasks=n_tasks,
@@ -43,7 +45,8 @@ class SymbolicDataset(SyntheticDataset):
         task_dict_params = self.sample_task_params(self.n_tasks)
         y = self.function(x, task_dict_params)
         x = F.one_hot(x, self.x_num_vals).float().flatten(start_dim=-2)
-        y = F.one_hot(y, self.y_num_vals).float().flatten(start_dim=-2)
+        if self.one_hot_y:
+            y = F.one_hot(y, self.y_num_vals).float().flatten(start_dim=-2)
         return {"x": x, "y": y}, task_dict_params
 
     @beartype
@@ -95,6 +98,7 @@ class Mastermind(SymbolicDataset):
         code_length: int = 8,
         num_colours: int = 6,
         shuffle_samples: bool = True,
+        one_hot_y: bool = True,
     ):
         self.code_length = code_length
         self.num_colours = num_colours
@@ -106,6 +110,7 @@ class Mastermind(SymbolicDataset):
             n_tasks=n_tasks,
             n_samples=n_samples,
             shuffle_samples=shuffle_samples,
+            one_hot_y=one_hot_y,
         )
 
     def sample_x(self, n_tasks: int, n_samples: int) -> LongTensor:
