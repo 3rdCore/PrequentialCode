@@ -63,7 +63,7 @@ class AtomicICLDataModule(LightningDataModule):
         super().__init__()
         self.save_hyperparameters(ignore=["dataset"])
         if hasattr(dataset, "shuffle_samples"):
-            self.dataset.shuffle_samples = False
+            dataset.shuffle_samples = False
         self.dataset = dataset
         self.train_dataset, self.val_dataset = shuffle_train_val_split(
             dataset, val_prop=self.hparams.val_prop
