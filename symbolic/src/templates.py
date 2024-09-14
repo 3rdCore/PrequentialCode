@@ -5,13 +5,14 @@ TEMPLATES_PATH = os.path.join("../data/templates")
 
 class MastermindTemplate:
     def __init__(self, with_option=False) -> None:
-        with open(os.path.join(TEMPLATES_PATH, "mastermind_description.md")) as f:
+        self.code_length = 4
+        with open(os.path.join(TEMPLATES_PATH, f"mastermind_description_s{self.code_length}.md")) as f:
             self.SYSTEM = f.read()
-        self.CONTEXT = "{input}\n{output}\n----\n"
-        self.RESPONSE_FORMAT = "Just provide 2 values separated by a space: count of correct colors and count of exact matches. The only accepted values are numbers from 0-4."
-        self.QUERY = self.RESPONSE_FORMAT + "\n{input}\n"
-        self.ERROR_MESSAGE = "Answer not in the expected format. "
-        self.VALUES = list(map(str, range(5)))
+        self.CONTEXT = "Guess: {input}\nResponse: {output}\n\n"
+        self.RESPONSE_FORMAT = f"What do you think the response is for this final guess? Make sure to reply with just 2 digits between 0-{self.code_length}, separated by a single space character. Just provide the 2 digits"
+        self.QUERY = "Guess: {input}\nResponse: ? ?\n-----------\n\n" + self.RESPONSE_FORMAT
+        self.ERROR_MESSAGE = f"Answer not in the expected format.\n Make sure to reply with just 2 digits between 0-{self.code_length}, separated by a single space character. Just provide the 2 digits"
+        self.VALUES = list(map(str, range(self.code_length + 1)))
         self.PATTERN = r"\b(?:[0-4])\b"
 
 

@@ -27,6 +27,12 @@ def cross_entropy_loss(y_true, logprobs, keepdims=False):
     return entropy if keepdims else (np.sum(entropy, axis=0) / len(y_true))
 
 
+def compute_random_baseline(y_true, n_draws=100):
+    y_rand = np.random.choice(4, size=(*y_true.shape, n_draws))
+    acc_rand = (y_rand == np.expand_dims(y_true, axis=-1)).mean(axis=-1)
+    return acc_rand.prod(axis=-1)
+
+
 def str2bool(v):
     if isinstance(v, bool):
         return v

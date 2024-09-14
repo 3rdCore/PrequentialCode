@@ -17,6 +17,6 @@ def log_results(metrics, params):
         tags=["tejas/llm-symbolic"],
         config=params,
     )
-    for i, (p, p_r, loss) in enumerate(zip(probs, probs_rand, n_sample_loss), start=1):
-        wandb.log({"n_samples": i, "p": p, "p_rand": p_r, "n_sample_loss_nexttoken": loss})
+    for i, (p, p_r, loss) in enumerate(zip(probs, probs_rand, n_sample_loss)):
+        wandb.log({"n_samples": i + 1, "p": p, "p_rand": p_r, "n_sample_loss_nexttoken": loss})
     wandb.finish()

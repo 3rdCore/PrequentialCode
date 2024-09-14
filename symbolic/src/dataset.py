@@ -30,7 +30,7 @@ class Dataset:
 
 
 class Mastermind(Dataset):
-    def __init__(self, n_tasks: int, n_samples: int, code_length: int = 4, num_colours: int = 5):
+    def __init__(self, n_tasks: int, n_samples: int, code_length: int = 4, num_colours: int = 6):
         self.code_length = code_length
         self.num_colours = num_colours
         super().__init__(n_tasks, n_samples, Datasets.MASTERMIND)
@@ -44,7 +44,7 @@ class Mastermind(Dataset):
             batched_bincount(code, max_val=self.num_colours).unsqueeze(1),
             batched_bincount(x, max_val=self.num_colours),
         ).sum(dim=-1)
-        y = torch.stack([correct_colors, full_correct], dim=-1)
+        y = torch.stack([full_correct, correct_colors], dim=-1)
         return x.numpy(), y.numpy()
 
 
