@@ -26,10 +26,11 @@ class Query:
 
     def query(self, system: str, prompts: pd.DataFrame) -> list[str]:
         results = []
-        context_message = ""
         context = prompts["context"]
         queries = prompts["query"]
-        for i, query in tqdm(enumerate(queries), total=len(queries), desc="Prompts: "):
+        context_message = ""
+        for i, query in tqdm(enumerate(queries[1:]), total=len(queries) - 1, desc="Prompts: "):
+            context_message += context[i]
             prompt = {"system": system, "context": context_message, "query": query}
             messages = []
             for j in range(self.n_retry + 1):
@@ -52,7 +53,7 @@ class Query:
                 answer = {"answer": answer, "logprobs": None}
                 warn(msg, RuntimeWarning)
             results.append(answer)
-            context_message += context[i]
+
         query_stats = self.get_query_stats()
         return results, query_stats
 

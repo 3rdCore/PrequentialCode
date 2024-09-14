@@ -27,6 +27,31 @@ def cross_entropy_loss(y_true, logprobs, keepdims=False):
     return entropy if keepdims else (np.sum(entropy, axis=0) / len(y_true))
 
 
+def compute_marginal_dist(y, code_length):
+    counts = np.zeros(shape=(y.size, code_length + 1))
+    counts[np.arange(len(counts)), y.flatten()] = 1
+    counts = counts.reshape(*y.shape, -1)
+    cumsum_counts = np.cumsum(counts, axis=1) + 1
+    dist = cumsum_counts / cumsum_counts.sum(axis=-1, keepdims=True)
+    return dist
+
+
+def compute_marginal_baseline(y_true, code_length):
+    exact_match = np.log(compute_marginal_dist(y_true[..., 0], code_length))[:, :-1, :]
+    correct_digit = np.log(compute_marginal_dist(y_true[..., 1], code_length))[:, :-1, :]
+    loss = cross_entropy_loss(y_true[:, 1:, 0], exact_match, keepdims=True) + cross_entropy_loss(
+        y_true[:, 1:, 1], correct_digit, keepdims=True
+    )
+    probs = np.exp(-loss)
+    return (loss / 2), probs
+
+
+def compute_random_baseline(y_true, n_draws=100):
+    y_rand = np.random.choice(4, size=(*y_true.shape, n_draws))
+    acc_rand = (y_rand == np.expand_dims(y_true, axis=-1)).mean(axis=-1)
+    return acc_rand.prod(axis=-1)
+
+
 def str2bool(v):
     if isinstance(v, bool):
         return v

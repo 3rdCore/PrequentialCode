@@ -78,7 +78,7 @@ class GPT(BaseLLM):
             response = prompt["response"]
             messages.append(AIMessage(response))
             retry_message = prompt["retry_message"]
-            query = f"{retry_message}\n{query}"
+            query = retry_message
         messages.append(HumanMessage(content=query))
         reponse = self.llm.invoke(messages)
 

@@ -25,16 +25,18 @@ def run(
     result_folder = f"run_{dataset_type}_{model_name}_{seed}_{int(time())}"
     validate_input(dataset_type, model_name, n_tasks, n_samples, seed, result_path, result_folder)
     print("run_id:", result_folder)
+    kwargs.update({"code_length": 8, "num_colours": 6})
     metadata = {
         "model": model_name,
         "dataset.name": dataset_type,
         "dataset.n_tasks": n_tasks,
         "dataset.n_samples": n_samples,
+        "dataset.code_length": kwargs["code_length"],
+        "dataset.num_colours": kwargs["num_colours"],
         "seed": seed,
         "prompt_type": "no_options" if not with_options else "with_options",
-        "run_id": result_folder,
+        "result_folder": result_folder,
     }
-
     result_path = os.path.join(result_path, result_folder)
     dataset = get_dataset(dataset_type, n_tasks, n_samples, **kwargs)
     data = dataset.sample(seed)

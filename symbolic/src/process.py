@@ -5,7 +5,7 @@ import numpy as np
 from dataset import Datasets
 from templates import MastermindTemplate
 
-from utils import cross_entropy_loss, softmax
+from utils import compute_marginal_baseline, compute_random_baseline, cross_entropy_loss, softmax
 
 
 class Parser:
@@ -75,6 +75,7 @@ def get_parser(dataset_type: str) -> Parser:
 
 
 def process_results(results, data):
+    code_length = data[0].shape[-1]
     y_true = data[1]
     y_pred = []
     logprobs = []
@@ -83,18 +84,24 @@ def process_results(results, data):
         logprobs.append(list(map(lambda r: [softmax(l) for l in r["logprobs"]], result)))
     y_pred = np.array(y_pred)
     logprobs = np.array(logprobs)
+    y_true = y_true[:, 1:, :]
     loss = cross_entropy_loss(y_true[..., 0], logprobs[..., 0, :], keepdims=True) + cross_entropy_loss(
         y_true[..., 1], logprobs[..., 1, :]
     )
     probs = np.exp(-loss)
-    probs_rand = np.random.rand(*probs.shape)
+    loss = loss / 2
+    probs_rand = compute_random_baseline(y_true)
+    loss_margin, probs_margin = compute_marginal_baseline(y_true, code_length)
 
     acc = (y_pred == y_true).sum(axis=-1) == 2
     task_wise_acc = acc.mean(axis=1)
     n_sample_loss = loss.mean(axis=0)
+    n_sample_loss_margin = loss_margin.mean(axis=0)
     metrics = {
         "n_sample_loss_nexttoken": n_sample_loss.tolist(),
+        "n_sample_loss_nexttoken_marg": n_sample_loss_margin.tolist(),
         "probs": probs.mean(axis=0).tolist(),
+        "probs_marg": probs_margin.mean(axis=0).tolist(),
         "probs_rand": probs_rand.mean(axis=0).tolist(),
         "cross_entropy_loss": n_sample_loss.mean(),
         "task_wise_accuracy": task_wise_acc.tolist(),
