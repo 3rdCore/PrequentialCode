@@ -48,17 +48,18 @@ class StandardOptimizer(LightningModule):
         preds = self.forward(x)
 
         loss = self.loss_fn(preds, y)
+        self.log(
+            "train_loss", loss, prog_bar=True, on_step=False, on_epoch=True
+        )  # exclude regularizer when logging
 
-        # Check if regularization_type exists in self.hparams
         if hasattr(self.hparams, "regularization_type"):
             if self.hparams.regularization_type == "L1":
-                loss += self.hparams.lambda_reg * sum(torch.norm(param, 1) for param in self.parameters())
+                reg = self.hparams.lambda_reg * sum(torch.norm(param, 1) for param in self.parameters())
             elif self.hparams.regularization_type == "L2":
-                loss += self.hparams.lambda_reg * sum(torch.norm(param, 2) for param in self.parameters())
+                reg = self.hparams.lambda_reg * sum(torch.norm(param, 2) for param in self.parameters())
+            self.log("reg_loss", reg, prog_bar=True, on_step=False, on_epoch=True)
 
-        self.log("train_loss", loss, prog_bar=True, on_step=False, on_epoch=True)
-
-        return loss
+        return loss + reg
 
     @beartype
     def validation_step(self, data, batch_idx) -> Tensor:
