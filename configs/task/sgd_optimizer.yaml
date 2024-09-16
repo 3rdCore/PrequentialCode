@@ -20,7 +20,7 @@ task:
   _target_: tasks.sgd_optimizer.StandardOptimizer
   inner_epochs: 100
   predictor: ${predictor}
-  min_train_samples: 1
+  min_train_samples: 5
   lr: 1e-4
   train_val_prop: 0.8
   n_fit_total: 1000
