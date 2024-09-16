@@ -51,7 +51,7 @@ class StandardOptimizer(LightningModule):
         self.log(
             "train_loss", loss, prog_bar=True, on_step=False, on_epoch=True
         )  # exclude regularizer when logging
-
+        reg = 0
         if hasattr(self.hparams, "regularization_type"):
             if self.hparams.regularization_type == "L1":
                 reg = self.hparams.lambda_reg * sum(torch.norm(param, 1) for param in self.parameters())
@@ -105,10 +105,12 @@ class StandardOptimizer(LightningModule):
         self.current_n_fit += 1
         self.current_inner_epochs = 0
         self.predictor.weight_init()
+        self.parameters = self.predictor.parameters
         self.trainer.optimizers = [self.configure_optimizers()]
         del self.trainer.callback_metrics["train_loss"]
         del self.trainer.callback_metrics["val_loss"]
 
+    @beartype
     @torch.inference_mode()
     def log_loss_vs_nsamples(self) -> None:
         if self.logger is None:
