@@ -4,7 +4,7 @@ from typing import Literal
 import torch
 from beartype import beartype
 from lightning import LightningModule, Trainer
-from lightning.pytorch.callbacks.early_stopping import EarlyStopping
+from lightning.pytorch.callbacks import Callback
 from torch import Tensor
 from torch.nn import Module, MSELoss
 from torch.nn.modules.loss import _Loss
@@ -57,7 +57,7 @@ class StandardOptimizer(LightningModule):
                 reg = self.hparams.lambda_reg * sum(torch.norm(param, 1) for param in self.parameters())
             elif self.hparams.regularization_type == "L2":
                 reg = self.hparams.lambda_reg * sum(torch.norm(param, 2) for param in self.parameters())
-            self.log("reg_loss", reg, prog_bar=True, on_step=False, on_epoch=True)
+        self.log("reg_loss", reg, prog_bar=True, on_step=False, on_epoch=True)
 
         return loss + reg
 
@@ -87,7 +87,7 @@ class StandardOptimizer(LightningModule):
         super().on_train_epoch_end()
         self.current_inner_epochs += 1
 
-        if self.current_inner_epochs >= self.hparams.inner_epochs:
+        if self.trainer.should_stop or self.current_inner_epochs >= self.hparams.inner_epochs:
             self.on_atomic_fit_end()
 
     @beartype
@@ -107,8 +107,12 @@ class StandardOptimizer(LightningModule):
         self.predictor.weight_init()
         self.parameters = self.predictor.parameters
         self.trainer.optimizers = [self.configure_optimizers()]
-        del self.trainer.callback_metrics["train_loss"]
-        del self.trainer.callback_metrics["val_loss"]
+        for callback in self.trainer.callbacks:
+            if isinstance(callback, CustomEarlyStopping):
+                callback.reset()
+        for key in self.trainer.callback_metrics:
+            self.log(key, torch.tensor(torch.inf), prog_bar=True, on_step=False, on_epoch=True)
+        pass
 
     @beartype
     @torch.inference_mode()
@@ -176,7 +180,7 @@ class StandardOptimizer(LightningModule):
         return hasattr(self.trainer.datamodule.dataset, "has_ood") and self.trainer.datamodule.dataset.has_ood
 
 
-class CustomEarlyStopping(EarlyStopping):
+class CustomEarlyStopping(Callback):
     @beartype
     def __init__(
         self,
@@ -187,20 +191,21 @@ class CustomEarlyStopping(EarlyStopping):
         mode="min",
         check_on_train_epoch_end=False,
     ):
-        super().__init__(
-            monitor=monitor,
-            min_delta=min_delta,
-            patience=patience,
-            verbose=verbose,
-            mode=mode,
-            check_on_train_epoch_end=check_on_train_epoch_end,
-        )
+        self.monitor = monitor
+        self.min_delta = min_delta
+        self.patience = patience
+        self.verbose = verbose
+        self.wait_count = 0
+        self.stopped_epoch = 0
+        self.best_score = torch.tensor(torch.inf) if mode == "min" else -torch.tensor(torch.inf)
+        self.mode = mode
+        self.check_on_train_epoch_end = check_on_train_epoch_end
+        self.monitor_op = torch.lt if mode == "min" else torch.gt
 
     @beartype
     def reset(self) -> None:
         """Resets the EarlyStopping object to the initial state."""
-        torch_inf = torch.tensor(torch.inf)
-        self.best_score = torch_inf if self.monitor_op == torch.lt else -torch_inf
+        self.best_score = torch.tensor(torch.inf) if self.monitor_op == torch.lt else -torch.tensor(torch.inf)
         self.wait_count = 0
         self.stopped_epoch = 0
 
@@ -211,8 +216,12 @@ class CustomEarlyStopping(EarlyStopping):
             trainer: the lightning trainer
             pl_module: the lightning module being trained
         """
-        super().on_validation_end(trainer, pl_module)  # call EarlyStop Callback
-
-        if trainer.should_stop or trainer.model.current_inner_epochs >= trainer.model.hparams.inner_epochs:
-            self.reset()  # reset the early stopping callback
-            trainer.model.on_atomic_fit_end()
+        if trainer.callback_metrics.get(self.monitor):
+            current = trainer.callback_metrics.get(self.monitor).clone().detach()
+            if self.monitor_op(current - self.min_delta, self.best_score):
+                self.best_score = current
+                self.wait_count = 0
+            else:
+                self.wait_count += 1
+                if self.wait_count >= self.patience:
+                    trainer.should_stop = True
