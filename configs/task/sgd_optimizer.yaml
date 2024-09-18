@@ -31,6 +31,6 @@ task:
 
 callbacks:
   _target_: tasks.sgd_optimizer.CustomEarlyStopping
-  patience: 5
+  patience: 10
   monitor: "val_loss"
-  min_delta: 0.0005
+  min_delta: 0.001
