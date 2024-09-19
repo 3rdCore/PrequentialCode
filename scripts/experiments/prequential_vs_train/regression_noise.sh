@@ -1,1 +1,0 @@
-python train.py --multirun hydra/launcher=mila_eric save_dir=/home/mila/e/eric.elmoznino/scratch/prequential_icl/logs seed=0,1,2 dataset=regression/linear,regression/sinusoid task=meta_optimizer ++logger.tags=[experiments/prequential_vs_train/regression_noise] ++task.meta_objective=prequential,train ++dataset.train_dataset.noise=0.05,0.1,0.15
