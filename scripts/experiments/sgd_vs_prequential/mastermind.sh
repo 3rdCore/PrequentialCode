@@ -1,5 +1,5 @@
 python train.py --multirun hydra/launcher=mila_eric save_dir=/home/mila/e/eric.elmoznino/scratch/prequential_icl/logs \
-    seed=0,1,2,3,4 \
+    seed=0,1,2,3,4,5,6,7,8,9,10,11,12,13,14 \
     dataset=symbolic/mastermind \
     task=sgd_optimizer \
     ++task.loss_fn._target_=utils.CrossEntropyLossFlat \
