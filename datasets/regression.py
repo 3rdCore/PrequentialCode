@@ -33,7 +33,7 @@ class RegressionDataset(SyntheticDataset):
         ood_style: Literal["shift_scale", "bimodal"] = "shift_scale",
         ood_shift: float | None = 2.0,
         ood_scale: float | None = 3.0,
-        sparsity: float | None = 0.0,
+        intrinsic_dim: int | None = None,
         data_dist: str = "normal",
         shuffle_samples: bool = True,
     ):
@@ -45,6 +45,7 @@ class RegressionDataset(SyntheticDataset):
         self.ood_shift = ood_shift
         self.ood_scale = ood_scale
         self.data_dist = data_dist
+        self.intrinsic_dim = intrinsic_dim
 
         if ood_style == "shift_scale" and (ood_shift is None or self.ood_scale is None):
             raise ValueError("ood_shift and ood_scale must be provided for ood_style='shift_scale'")
@@ -76,7 +77,6 @@ class RegressionDataset(SyntheticDataset):
         x = self.sample_x(n_tasks, n_samples)
 
         task_dict_params = self.sample_task_params(self.n_tasks)
-        
         y = self.function(x, task_dict_params)
         y += self.noise * torch.randn_like(y)
         data_dict = {"x": x, "y": y}
@@ -135,7 +135,7 @@ class LinearRegression(RegressionDataset):
         ood_style: str = "shift_scale",
         ood_shift: float | None = 2.0,
         ood_scale: float | None = 3.0,
-        sparsity: float | None = 0.0,
+        intrinsic_dim: int | None = None,
         data_dist: str = "normal",
         shuffle_samples: bool = True,
     ):
@@ -149,7 +149,7 @@ class LinearRegression(RegressionDataset):
             ood_style=ood_style,
             ood_shift=ood_shift,
             ood_scale=ood_scale,
-            sparsity=sparsity,
+            intrinsic_dim=intrinsic_dim,
             data_dist=data_dist,
             shuffle_samples=shuffle_samples,
         )
@@ -158,10 +158,13 @@ class LinearRegression(RegressionDataset):
     def sample_task_params(self, n_tasks: int | None = None) -> dict[str, Tensor]:
         # Linear regression weights
         n_tasks = n_tasks if n_tasks is not None else self.n_tasks
-        w = torch.randn(n_tasks, self.x_dim + 1, self.y_dim) / (self.x_dim + 1) ** 0.5
-        if self.sparsity > 0:
-            mask = torch.rand_like(w) < self.sparsity
-            w = w * mask
+        w = torch.randn(n_tasks, self.x_dim + 1, self.y_dim)
+        if self.intrinsic_dim is not None:
+            samples = np.random.choice(self.x_dim, self.x_dim - self.intrinsic_dim, replace=False)
+            w[:, samples, :] = 0
+            w = w / (self.intrinsic_dim + 1) ** 0.5
+        else:
+            w = w / (self.x_dim + 1) ** 0.5
         return {"w": w}
 
     @beartype
@@ -418,7 +421,7 @@ class TchebyshevRegression(RegressionDataset):
         ood_style: str = "shift_scale",
         ood_shift: float | None = 2.0,
         ood_scale: float | None = 3.0,
-        sparsity: float | None = 0.0,
+        intrinsic_dim: int | None = None,
         data_dist: str = "normal",
         shuffle_samples: bool = True,
     ):
@@ -435,7 +438,7 @@ class TchebyshevRegression(RegressionDataset):
             ood_style=ood_style,
             ood_shift=ood_shift,
             ood_scale=ood_scale,
-            sparsity=sparsity,
+            intrinsic_dim=intrinsic_dim,
             data_dist=data_dist,
             shuffle_samples=shuffle_samples,
         )
@@ -444,10 +447,11 @@ class TchebyshevRegression(RegressionDataset):
     def sample_task_params(self, n_tasks: Optional[int] = None) -> Dict[str, Tensor]:
         # Chebyshev polynomial coefficients
         n_tasks = n_tasks if n_tasks is not None else self.n_tasks
-        coeffs = torch.randn(n_tasks, (self.x_dim) * (self.degree + 1), self.y_dim)
-        if self.sparsity > 0:
-            mask = torch.rand_like(coeffs) < self.sparsity
-            coeffs = coeffs * mask
+        coeffs = torch.randn(n_tasks, self.x_dim, self.degree + 1, self.y_dim)
+        if self.intrinsic_dim is not None:
+            samples = np.random.choice(self.x_dim, self.x_dim - self.intrinsic_dim, replace=False)
+            coeffs[:, samples, :, :] = 0
+            coeffs = coeffs / (self.intrinsic_dim + 1) ** 0.5
         return {"coeffs": coeffs}
 
     @beartype
@@ -458,7 +462,7 @@ class TchebyshevRegression(RegressionDataset):
             Tn = 2 * x * T[-1] - T[-2]  # recurrence relation
             T.append(Tn)
         T = torch.stack(T, dim=-1)
-        y = torch.einsum("ndy,ntyd->nty", coeffs, T)
+        y = torch.einsum("txdy,tsxd->tsy", coeffs, T)
         mean = y.mean(dim=0, keepdim=True)  # ugly normalization
         std = y.std(dim=0, keepdim=True)
         y = (y - mean) / std
