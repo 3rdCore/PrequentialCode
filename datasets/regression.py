@@ -45,7 +45,7 @@ class RegressionDataset(SyntheticDataset):
         self.ood_shift = ood_shift
         self.ood_scale = ood_scale
         self.data_dist = data_dist
-        self.intrinsic_dim = intrinsic_dim
+        self.intrinsic_dim = intrinsic_dim if intrinsic_dim is not None else x_dim
 
         if ood_style == "shift_scale" and (ood_shift is None or self.ood_scale is None):
             raise ValueError("ood_shift and ood_scale must be provided for ood_style='shift_scale'")
