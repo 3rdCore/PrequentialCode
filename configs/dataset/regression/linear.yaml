@@ -11,7 +11,7 @@ train_dataset:
   ood_style: "bimodal"
   ood_shift: 2.0
   ood_scale: 3.0
-  sparsity: 0.0
+  intrinsic_dim: null
   data_dist: "normal"
   shuffle_samples: True
 val_dataset:
@@ -24,6 +24,6 @@ val_dataset:
   has_ood: ${dataset.train_dataset.has_ood}
   ood_shift: ${dataset.train_dataset.ood_shift}
   ood_scale: ${dataset.train_dataset.ood_scale}
-  sparsity: ${dataset.train_dataset.sparsity}
+  intrinsic_dim: ${dataset.train_dataset.intrinsic_dim}
   data_dist: ${dataset.train_dataset.data_dist}
   shuffle_samples: ${dataset.train_dataset.shuffle_samples}
