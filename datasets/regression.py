@@ -33,6 +33,7 @@ class RegressionDataset(SyntheticDataset):
         ood_style: Literal["shift_scale", "bimodal"] = "shift_scale",
         ood_shift: float | None = 2.0,
         ood_scale: float | None = 3.0,
+        sparsity: float | None = 0.0,
         data_dist: str = "normal",
         shuffle_samples: bool = True,
     ):
@@ -75,6 +76,7 @@ class RegressionDataset(SyntheticDataset):
         x = self.sample_x(n_tasks, n_samples)
 
         task_dict_params = self.sample_task_params(self.n_tasks)
+        
         y = self.function(x, task_dict_params)
         y += self.noise * torch.randn_like(y)
         data_dict = {"x": x, "y": y}
@@ -133,6 +135,7 @@ class LinearRegression(RegressionDataset):
         ood_style: str = "shift_scale",
         ood_shift: float | None = 2.0,
         ood_scale: float | None = 3.0,
+        sparsity: float | None = 0.0,
         data_dist: str = "normal",
         shuffle_samples: bool = True,
     ):
@@ -146,6 +149,7 @@ class LinearRegression(RegressionDataset):
             ood_style=ood_style,
             ood_shift=ood_shift,
             ood_scale=ood_scale,
+            sparsity=sparsity,
             data_dist=data_dist,
             shuffle_samples=shuffle_samples,
         )
@@ -155,6 +159,9 @@ class LinearRegression(RegressionDataset):
         # Linear regression weights
         n_tasks = n_tasks if n_tasks is not None else self.n_tasks
         w = torch.randn(n_tasks, self.x_dim + 1, self.y_dim) / (self.x_dim + 1) ** 0.5
+        if self.sparsity > 0:
+            mask = torch.rand_like(w) < self.sparsity
+            w = w * mask
         return {"w": w}
 
     @beartype
@@ -411,6 +418,7 @@ class TchebyshevRegression(RegressionDataset):
         ood_style: str = "shift_scale",
         ood_shift: float | None = 2.0,
         ood_scale: float | None = 3.0,
+        sparsity: float | None = 0.0,
         data_dist: str = "normal",
         shuffle_samples: bool = True,
     ):
@@ -427,6 +435,7 @@ class TchebyshevRegression(RegressionDataset):
             ood_style=ood_style,
             ood_shift=ood_shift,
             ood_scale=ood_scale,
+            sparsity=sparsity,
             data_dist=data_dist,
             shuffle_samples=shuffle_samples,
         )
@@ -436,6 +445,9 @@ class TchebyshevRegression(RegressionDataset):
         # Chebyshev polynomial coefficients
         n_tasks = n_tasks if n_tasks is not None else self.n_tasks
         coeffs = torch.randn(n_tasks, (self.x_dim) * (self.degree + 1), self.y_dim)
+        if self.sparsity > 0:
+            mask = torch.rand_like(coeffs) < self.sparsity
+            coeffs = coeffs * mask
         return {"coeffs": coeffs}
 
     @beartype
