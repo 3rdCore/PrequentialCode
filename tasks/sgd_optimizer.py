@@ -49,7 +49,7 @@ class StandardOptimizer(LightningModule):
 
         loss = self.loss_fn(preds, y)
         self.log(
-            "train_loss", loss, prog_bar=True, on_step=False, on_epoch=True
+            "train_loss", loss, prog_bar=False, on_step=False, on_epoch=True
         )  # exclude regularizer when logging
         reg = 0
         if hasattr(self.hparams, "regularization_type"):
@@ -57,7 +57,7 @@ class StandardOptimizer(LightningModule):
                 reg = self.hparams.lambda_reg * sum(torch.norm(param, 1) for param in self.parameters())
             elif self.hparams.regularization_type == "L2":
                 reg = self.hparams.lambda_reg * sum(torch.norm(param, 2) for param in self.parameters())
-        self.log("reg_loss", reg, prog_bar=True, on_step=False, on_epoch=True)
+        self.log("reg_loss", reg, prog_bar=False, on_step=False, on_epoch=True)
 
         return loss + reg
 
@@ -68,7 +68,7 @@ class StandardOptimizer(LightningModule):
         preds = self.forward(x)
 
         loss = self.loss_fn(preds, y)
-        self.log("val_loss", loss, prog_bar=True, on_step=False, on_epoch=True)
+        self.log("val_loss", loss, prog_bar=False, on_step=False, on_epoch=True)
         return loss
 
     @beartype
@@ -111,7 +111,13 @@ class StandardOptimizer(LightningModule):
             if isinstance(callback, CustomEarlyStopping):
                 callback.reset()
         for key in self.trainer.callback_metrics:
-            self.log(key, torch.tensor(torch.inf), prog_bar=True, on_step=False, on_epoch=True)
+            self.log(
+                key,
+                torch.tensor(torch.inf),
+                prog_bar=False,
+                on_step=False,
+                on_epoch=True,
+            )
         pass
 
     @beartype
