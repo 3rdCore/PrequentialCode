@@ -3,8 +3,8 @@ python train.py --multirun hydra/launcher=mila_eric save_dir=/home/mila/e/eric.e
     dataset=regression/linear \
     task=sgd_optimizer \
     ++dataset.train_dataset.x_dim=3 \
-    ++task.predictor.n_layers=5 \
-    ++task.predictor.h_dim=64 \
+    ++predictor.n_layers=5 \
+    ++predictor.h_dim=64 \
     ++datamodule.batch_size=64 \
     ++dataset.train_dataset.n_samples=2000 \
     ++dataset.train_dataset.noise=0.2 \
