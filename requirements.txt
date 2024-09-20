@@ -12,4 +12,5 @@ hydra-core
 beartype
 submitit
 hydra-submitit-launcher
-mamba-ssm
+causal-conv1d
+mamba-ssm[causal-conv1d]
