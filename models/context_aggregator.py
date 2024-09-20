@@ -107,8 +107,11 @@ class Mambaoptimizer(ContextAggregator):
         h_dim: int,
         n_layers: int,
         x_keys: tuple[str] = ("x", "y"),
-        mixer_type: Literal["Mamba", "Mamba2"] = "Mamba",
+        mixer_type: Literal["Mamba1", "Mamba2"] = "Mamba1",
         layer_norm_eps: float = 1e-5,
+        mixer_config = None,
+        mlp_config = None,
+        norm_config = None,
     ) -> None:
         super().__init__()
 
@@ -119,10 +122,14 @@ class Mambaoptimizer(ContextAggregator):
         self.x_embedding = nn.Linear(x_dim, h_dim)
         self.x0_embedding = nn.Parameter(torch.zeros(1, 1, h_dim))
 
-        mixer_cls = {"Mamba": Mamba, "Mamba2": Mamba2}[mixer_type]
-        mixer_cls = functools.partial(mixer_cls, d_model=h_dim)
-        mlp_cls = functools.partial(GatedMLP, in_features=h_dim)
-        norm_cls = functools.partial(nn.LayerNorm, eps=layer_norm_eps)
+        mixer_config = mixer_config or {}
+        mlp_config = mlp_config or {}
+        norm_config = norm_config or {}
+
+        mixer_cls = {"Mamba1": Mamba, "Mamba2": Mamba2}[mixer_type]
+        mixer_cls = functools.partial(mixer_cls, **mixer_config)
+        mlp_cls = functools.partial(GatedMLP, **mlp_config)
+        norm_cls = functools.partial(nn.LayerNorm, eps=layer_norm_eps, **norm_config)
 
         self.layers = nn.ModuleList(
             [

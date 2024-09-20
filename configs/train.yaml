@@ -3,6 +3,7 @@ defaults:
   - dataset: null
   - task: null
   - task/predictor: null
+  - task/context_aggregator: Transfoptimizer
   - _self_
 
 save_dir: "logs/"
@@ -10,7 +11,7 @@ seed: 27
 
 logger:
   _target_: lightning.pytorch.loggers.WandbLogger
-  entity: "dhanya-shridar"
+  entity: "mahanfathi"
   project: "Prequential-ICL"
   name: ${now:%Y-%m-%d}_${now:%H-%M-%S}
   save_dir: ${save_dir}
