@@ -22,11 +22,5 @@ task:
   meta_objective: prequential
   min_train_samples: 1
   lr: 1e-4
-  context_aggregator:
-    _target_: models.context_aggregator.Transfoptimizer
-    x_dim: ${ast_eval:'${dataset.train_dataset.x_dim} + ${dataset.train_dataset.y_dim}'}
-    z_dim: 128
-    h_dim: 256
-    n_layers: 4
-    n_heads: 4
+  context_aggregator: ${context_aggregator}
   predictor: ${predictor}
