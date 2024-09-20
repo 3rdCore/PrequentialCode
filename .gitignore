@@ -159,6 +159,7 @@ __pycache__
 logs/*
 wandb
 papers/preprint/data/*
+log.txt
 
 # Keep
 !.gitkeep
