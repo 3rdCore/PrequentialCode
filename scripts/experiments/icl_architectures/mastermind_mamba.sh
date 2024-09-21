@@ -9,4 +9,5 @@ python train.py --multirun hydra/launcher=mila_eric save_dir=/home/mila/e/eric.e
     ++predictor.x_dim=48 \
     ++predictor.y_dim=18 \
     ++trainer.max_epochs=80 \
+    ++dataset.train_dataset.n_samples=1000 \
     ++logger.tags=[experiments/icl_architectures/regression]
