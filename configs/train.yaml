@@ -3,6 +3,7 @@ defaults:
   - dataset: null
   - task: null
   - task/predictor: null
+  - task/context_aggregator: transformer
   - _self_
 
 save_dir: "logs/"

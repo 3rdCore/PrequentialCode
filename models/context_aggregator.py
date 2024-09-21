@@ -1,8 +1,14 @@
 from abc import ABC, abstractmethod
+import functools 
+from typing import Literal
 
 import torch
 from beartype import beartype
 from torch import Tensor, nn
+from mamba_ssm import Mamba, Mamba2
+from mamba_ssm.modules.block import Block as MambaBlock
+
+from models.utils import GatedMLP
 
 
 class ContextAggregator(ABC, nn.Module):
@@ -84,6 +90,76 @@ class Transfoptimizer(ContextAggregator):
         causal_mask = torch.nn.Transformer.generate_square_subsequent_mask(x.shape[0])
         features = self.context_encoder.forward(x, mask=causal_mask, is_causal=True)
         z = self.projection(features)
+        return {"z": z}
+
+    @property
+    @beartype
+    def z_shape(self) -> dict[str, int]:
+        return {"z": self.z_dim}
+
+
+class Mambaoptimizer(ContextAggregator):
+    @beartype
+    def __init__(
+        self,
+        x_dim: int,  # number of total features in the input
+        z_dim: int,  # number of features in the output
+        h_dim: int,
+        n_layers: int,
+        x_keys: tuple[str] = ("x", "y"),
+        mixer_type: Literal["Mamba1", "Mamba2"] = "Mamba1",
+        layer_norm_eps: float = 1e-5,
+        mixer_config = None,
+        mlp_config = None,
+        norm_config = None,
+    ) -> None:
+        super().__init__()
+
+        self.x_dim = x_dim
+        self.z_dim = z_dim
+        self.x_keys = x_keys
+
+        self.x_embedding = nn.Linear(x_dim, h_dim)
+        self.x0_embedding = nn.Parameter(torch.zeros(1, 1, h_dim))
+
+        mixer_config = mixer_config or {}
+        mlp_config = mlp_config or {}
+        norm_config = norm_config or {}
+
+        mixer_cls = {"Mamba1": Mamba, "Mamba2": Mamba2}[mixer_type]
+        mixer_cls = functools.partial(mixer_cls, **mixer_config)
+        mlp_cls = functools.partial(GatedMLP, **mlp_config)
+        norm_cls = functools.partial(nn.LayerNorm, eps=layer_norm_eps, **norm_config)
+
+        self.layers = nn.ModuleList(
+            [
+            MambaBlock(
+                dim=h_dim,
+                mixer_cls=mixer_cls,
+                mlp_cls=mlp_cls,
+                norm_cls=norm_cls,
+            )
+            for _ in range(n_layers)
+            ]
+        )
+
+        if z_dim != h_dim:
+            self.projection = nn.Linear(h_dim, z_dim)
+        else:
+            self.projection = nn.Identity()
+
+    @beartype
+    def forward(self, x: dict[str, Tensor]) -> dict[str, Tensor]:
+        x = torch.cat([x[name] for name in self.x_keys], dim=-1)
+        x = self.x_embedding(x)
+        x0 = self.x0_embedding.expand(1, x.shape[1], -1)
+        x = torch.cat([x0, x], dim=0)
+
+        hidden_states = x.permute(1, 0, 2)
+        residual = None
+        for layer in self.layers:
+            hidden_states, residual = layer(hidden_states, residual)
+        z = self.projection(hidden_states).permute(1, 0, 2)
         return {"z": z}
 
     @property

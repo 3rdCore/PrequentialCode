@@ -3,7 +3,7 @@ python train.py --multirun hydra/launcher=mila_eric save_dir=/home/mila/e/eric.e
     dataset=symbolic/mastermind \
     task=meta_optimizer_symbolic \
     ++task.meta_objective=prequential,train \
-    ++task.context_aggregator.x_dim=66 \
+    ++context_aggregator.x_dim=66 \
     ++predictor.x_dim=48 \
     ++predictor.y_dim=18 \
     ++trainer.max_epochs=80 \

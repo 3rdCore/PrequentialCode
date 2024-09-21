@@ -1,0 +1,16 @@
+defaults:
+  - submitit_slurm
+
+partition: long
+cpus_per_task: 1
+gres: gpu:1
+tasks_per_node: 1
+mem_gb: 32
+timeout_min: 1440  # 24 hours
+array_parallelism: 20
+
+setup:
+  - "module --quiet load libffi"
+  - "module --quiet load python/3.10"
+  - "module --quiet load cuda/11.8"
+  - "source ~/.virtualenvs/jax/bin/activate"
