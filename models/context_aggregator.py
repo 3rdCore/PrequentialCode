@@ -10,7 +10,7 @@ try:
     from mamba_ssm import Mamba, Mamba2
     from mamba_ssm.modules.block import Block as MambaBlock
 except ImportError:
-    print("Mamba not installed. Won't be able to use it's context aggregator.")
+    print("Mamba not installed. Won't be able to use its context aggregator.")
 
 from models.utils import GatedMLP
 
@@ -116,6 +116,7 @@ class Mambaoptimizer(ContextAggregator):
         mixer_config=None,
         mlp_config=None,
         norm_config=None,
+        **kwargs,  # Ignore additional configs (hack because our configs are fucked)
     ) -> None:
         super().__init__()
 
