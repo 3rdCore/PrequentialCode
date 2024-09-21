@@ -2,8 +2,8 @@ defaults:
   - hydra: default
   - dataset: null
   - task: null
+  - task/context_aggregator: null
   - task/predictor: null
-  - task/context_aggregator: transformer
   - _self_
 
 save_dir: "logs/"

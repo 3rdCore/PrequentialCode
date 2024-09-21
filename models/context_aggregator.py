@@ -1,12 +1,16 @@
+import functools
 from abc import ABC, abstractmethod
-import functools 
 from typing import Literal
 
 import torch
 from beartype import beartype
 from torch import Tensor, nn
-from mamba_ssm import Mamba, Mamba2
-from mamba_ssm.modules.block import Block as MambaBlock
+
+try:
+    from mamba_ssm import Mamba, Mamba2
+    from mamba_ssm.modules.block import Block as MambaBlock
+except ImportError:
+    print("Mamba not installed. Won't be able to use it's context aggregator.")
 
 from models.utils import GatedMLP
 
@@ -109,9 +113,9 @@ class Mambaoptimizer(ContextAggregator):
         x_keys: tuple[str] = ("x", "y"),
         mixer_type: Literal["Mamba1", "Mamba2"] = "Mamba1",
         layer_norm_eps: float = 1e-5,
-        mixer_config = None,
-        mlp_config = None,
-        norm_config = None,
+        mixer_config=None,
+        mlp_config=None,
+        norm_config=None,
     ) -> None:
         super().__init__()
 
@@ -133,13 +137,13 @@ class Mambaoptimizer(ContextAggregator):
 
         self.layers = nn.ModuleList(
             [
-            MambaBlock(
-                dim=h_dim,
-                mixer_cls=mixer_cls,
-                mlp_cls=mlp_cls,
-                norm_cls=norm_cls,
-            )
-            for _ in range(n_layers)
+                MambaBlock(
+                    dim=h_dim,
+                    mixer_cls=mixer_cls,
+                    mlp_cls=mlp_cls,
+                    norm_cls=norm_cls,
+                )
+                for _ in range(n_layers)
             ]
         )
 
