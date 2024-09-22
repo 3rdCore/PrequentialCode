@@ -1,11 +1,11 @@
-_target_: models.context_aggregator.Mambaoptimizer
+_target_: models.context_aggregator.S4optimizer
 x_dim: ${ast_eval:'${dataset.train_dataset.x_dim} + ${dataset.train_dataset.y_dim}'}
 z_dim: 128
 h_dim: 256
 n_layers: 4
-mixer_type: "Mamba1"
-mixer_config:
-  d_state: 8
-  d_conv: 4
+mixer_type: "S4" # choose from ["S4", "S4D"]
+block_config:
+  dropout: 0.0
+  lr: 0.001
 norm_config:
   eps: 1e-05
