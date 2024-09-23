@@ -12,7 +12,7 @@ try:
 except ImportError:
     print("Mamba not installed. Won't be able to use its context aggregator.")
 
-from models.libs.ssm import S4Block as S4, S4D
+from models.libs.ssm import S4, S4D
 from models.utils import GatedMLP
 
 
