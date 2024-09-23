@@ -1,9 +1,12 @@
+MAMBAVERSION=$1
+
 python train.py --multirun hydra/launcher=mila_eric save_dir=/home/mila/e/eric.elmoznino/scratch/prequential_icl/logs \
     seed=0,1,2,3,4 \
     dataset=symbolic/mastermind \
     task=meta_optimizer_symbolic \
     ++task.meta_objective=prequential \
     task/context_aggregator=mamba \
+    ++context_aggregator.mixer_type=${MAMBAVERSION} \
     ++task.context_aggregator.x_dim=66 \
     ++context_aggregator.x_dim=66 \
     ++predictor.x_dim=48 \
