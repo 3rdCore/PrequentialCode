@@ -15,7 +15,7 @@ python train.py --multirun hydra/launcher=mila_eric save_dir=/home/mila/e/eric.e
     ++context_aggregator.x_dim=66 \
     ++predictor.x_dim=48 \
     ++predictor.y_dim=18 \
-    ++trainer.max_epochs=80 \
+    ++trainer.max_epochs=120 \
     ++dataset.train_dataset.n_samples=${NSAMPLES} \
     hydra.launcher.gres=${GRES} \
     ++logger.tags=[experiments/icl_architectures/symbolic]
