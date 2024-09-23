@@ -8,5 +8,5 @@ python train.py --multirun hydra/launcher=mila_eric save_dir=/home/mila/e/eric.e
     ++dataset.train_dataset.x_dim=3 \
     ++dataset.train_dataset.noise=0.2 \
     task/context_aggregator=mamba \
-    ++context_aggregator.mixer_type=${MAMBAVERSION} \
+    ++task.context_aggregator.mixer_type=Mamba${MAMBAVERSION} \
     ++logger.tags=[experiments/icl_architectures/regression]

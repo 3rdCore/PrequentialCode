@@ -6,7 +6,7 @@ python train.py --multirun hydra/launcher=mila_eric save_dir=/home/mila/e/eric.e
     task=meta_optimizer_symbolic \
     ++task.meta_objective=prequential \
     task/context_aggregator=mamba \
-    ++context_aggregator.mixer_type=${MAMBAVERSION} \
+    ++task.context_aggregator.mixer_type=Mamba${MAMBAVERSION} \
     ++task.context_aggregator.x_dim=66 \
     ++context_aggregator.x_dim=66 \
     ++predictor.x_dim=48 \
