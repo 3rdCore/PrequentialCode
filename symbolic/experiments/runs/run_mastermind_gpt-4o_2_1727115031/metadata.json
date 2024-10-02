@@ -1,1 +1,0 @@
-{"model": "gpt-4o", "dataset.name": "mastermind", "dataset.n_tasks": 1, "dataset.n_samples": 5, "dataset.code_length": 8, "dataset.num_colours": 6, "seed": 2, "prompt_type": "no_options", "result_folder": "run_mastermind_gpt-4o_2_1727115031"}
