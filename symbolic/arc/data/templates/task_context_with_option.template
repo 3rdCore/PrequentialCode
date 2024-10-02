@@ -1,0 +1,14 @@
+#### Example {i}:
+**Input Grid:**
+```
+{input_grid}
+```
+
+For the above input grid, which of the following is the correct output grid?
+
+**Options:**
+
+{options}
+
+Out of the 5 options provide the best option that represents the output grid based on the given input grid and patterns you have observed in the examples.
+<answer>{label}</answer>
