@@ -10,12 +10,11 @@ save_dir: "logs/"
 seed: 27
 
 logger:
-  _target_: utils.logger.BufferedLogger
+  _target_: lightning.pytorch.loggers.WandbLogger
   entity: "dhanya-shridar"
   project: "Prequential-ICL"
   name: ${now:%Y-%m-%d}_${now:%H-%M-%S}
   save_dir: ${save_dir}
-  flush_every_n_steps: ${ast_eval:'${datamodule.dataset.train_dataset.n_tasks} // ${datamodule.batch_size}'}
   offline: False
   tags: null
 
