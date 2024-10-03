@@ -19,7 +19,6 @@ class StandardOptimizer(LightningModule):
         predictor: Module,
         lr: float = 1e-4,
         min_train_samples: int = 1,
-        train_val_prop: float = 0.8,
         y_key: str = "y",
         loss_fn: _Loss = MSELoss(),
         n_fit_total=1000,
@@ -125,48 +124,40 @@ class StandardOptimizer(LightningModule):
     def log_loss_vs_nsamples(self) -> None:
         if self.logger is None:
             return
-        loss_train, loss_eval, loss_ood = 0, 0, 0
-        total_train_samples, total_eval_samples = 0, 0
+
+        def compute_loss(data):
+            loss, loss_ood, total_samples = 0, 0, 0
+            for data, _ in dl:
+                x, y = (data["x"].to(self.device), data[self.hparams.y_key].to(self.device))
+                preds = self.forward(x)
+                l = self.loss_fn(preds, y)
+                loss += l.item() * x.size(0)
+                total_samples += x.size(0)
+                if self.has_ood:
+                    x_ood, y_ood = data["x_ood"].to(self.device), data[f"{self.hparams.y_key}_ood"].to(
+                        self.device
+                    )
+                    preds_ood = self.forward(x_ood)
+                    l_ood = self.loss_fn(preds_ood, y_ood)
+                    loss_ood += l_ood.item() * x_ood.size(0)
+            loss_i = loss / total_samples
+            if self.has_ood:
+                loss_ood_i = loss_ood / total_samples
+            return loss_i, loss_ood_i, total_samples
+
         dl = self.trainer.datamodule.train_dataloader()
-        for data, _ in dl:
-            x, y = (data["x"].to(self.device), data[self.hparams.y_key].to(self.device))
-            preds = self.forward(x)
-            l = self.loss_fn(preds, y)
-            loss_train += l.item() * x.size(0)
-            total_train_samples += x.size(0)
-            if self.has_ood:
-                x_ood, y_ood = data["x_ood"].to(self.device), data[f"{self.hparams.y_key}_ood"].to(
-                    self.device
-                )
-                preds_ood = self.forward(x_ood)
-                l_ood = self.loss_fn(preds_ood, y_ood)
-                loss_ood += l_ood.item() * x_ood.size(0)
+        train_loss, train_ood_loss, train_total_samples = compute_loss(dl)
+        dl = self.trainer.datamodule.test_dataloader()
+        test_loss, test_ood_loss, test_total_samples = compute_loss(dl)
 
-        dl = self.trainer.datamodule.val_dataloader()
-        for data, _ in dl:
-            x, y = (data["x"].to(self.device), data[self.hparams.y_key].to(self.device))
-            preds = self.forward(x)
-            l = self.loss_fn(preds, y)
-            loss_eval += l.item() * x.size(0)
-            total_eval_samples += x.size(0)
-            if self.has_ood:
-                x_ood, y_ood = data["x_ood"].to(self.device), data[f"{self.hparams.y_key}_ood"].to(
-                    self.device
-                )
-                preds_ood = self.forward(x_ood)
-                l_ood = self.loss_fn(preds_ood, y_ood)
-                loss_ood += l_ood.item() * x_ood.size(0)
-
-        l_train_i = loss_train / total_train_samples
-        l_nexttoken_i = loss_eval / total_eval_samples
         logs = {
-            "n_samples": total_train_samples + total_eval_samples,
-            "val_tasks/n_sample_loss_train": l_train_i,
-            "val_tasks/n_sample_loss_nexttoken": l_nexttoken_i,
+            "n_samples": self.trainer.datamodule.get_current_n_samples(),
+            "val_tasks/n_sample_loss_train": train_loss,
+            "val_tasks/n_sample_loss_nexttoken": test_loss,
         }
         if self.has_ood:
-            loss_ood_i = loss_ood / (total_train_samples + total_eval_samples)
-            logs.update({"val_tasks/n_sample_loss_ood": loss_ood_i})
+            loss_ood_i = (train_ood_loss + test_ood_loss) / (train_total_samples + test_total_samples)
+            logs.update({f"val_tasks/n_sample_loss_ood": loss_ood_i})
         self.logger.experiment.log(logs)
 
     @beartype
@@ -174,7 +165,7 @@ class StandardOptimizer(LightningModule):
         """Sample a new task and update the dataloaders."""
 
         log_min_samples = torch.log(torch.tensor(self.hparams.min_train_samples, dtype=torch.float))
-        log_max_samples = torch.log(torch.tensor(trainer.datamodule.dataset.n_samples, dtype=torch.float))
+        log_max_samples = torch.log(torch.tensor(trainer.datamodule.max_train_samples, dtype=torch.float))
         n_samples = int(
             torch.exp(torch.distributions.Uniform(log_min_samples, log_max_samples).sample()).item()
         )

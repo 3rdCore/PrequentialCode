@@ -10,10 +10,12 @@ datamodule:
   _target_: datasets.interfaces.AtomicICLDataModule
   batch_size: 1
   dataset: ${dataset.train_dataset}
+  max_train_samples: 1000
+  val_prop: 0.2
 
 trainer:
   max_epochs: 100000
-  log_every_n_steps : 1
+  log_every_n_steps : 5
   reload_dataloaders_every_n_epochs: 1
   enable_progress_bar: False
 
@@ -23,7 +25,6 @@ task:
   predictor: ${predictor}
   min_train_samples: 5
   lr: 1e-4
-  train_val_prop: 0.8
   n_fit_total: 1000
   regularization_type: null
   lambda_reg: null
