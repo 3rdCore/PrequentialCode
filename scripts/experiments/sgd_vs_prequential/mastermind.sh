@@ -2,11 +2,13 @@ python train.py --multirun hydra/launcher=mila_eric save_dir=/home/mila/e/eric.e
     seed=0,1,2,3,4,5,6,7,8,9,10,11,12,13,14 \
     dataset=symbolic/mastermind \
     task=sgd_optimizer \
+    ++task.one_hot_x=6 \
     ++task.loss_fn._target_=utils.CrossEntropyLossFlat \
     ++predictor.in_features=48 \
     ++predictor.out_features=18 \
     ++predictor.n_layers=5 \
     ++predictor.h_dim=256 \
+    ++dataset.train_dataset.one_hot_x=False \
     ++dataset.train_dataset.one_hot_y=False \
     ++datamodule.batch_size=64 \
     ++datamodule.max_train_samples=3000 \

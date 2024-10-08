@@ -68,8 +68,10 @@ class AtomicICLDataModule(LightningDataModule):
         self.dataset = dataset
         self.max_train_samples = max_train_samples
         self.val_prop = val_prop
-        self.train_dataset, self.val_dataset, self.test_dataset = shuffle_train_val_test_split(
-            dataset, n_samples=max_train_samples, val_prop=self.hparams.val_prop
+        self.train_dataset, self.val_dataset, self.test_dataset = (
+            shuffle_train_val_test_split(
+                dataset, n_samples=max_train_samples, val_prop=self.hparams.val_prop
+            )
         )
         self.switch_task(task=self.hparams.current_task)
 
@@ -82,7 +84,11 @@ class AtomicICLDataModule(LightningDataModule):
 
         # randomly select a task in multi_dataset self.multi_dataset.n_tasks
         def update_current_task(dataset):
-            dataset.current_task = (dataset.current_task + 1) % self.dataset.n_tasks if task is None else task
+            dataset.current_task = (
+                (dataset.current_task + 1) % self.dataset.n_tasks
+                if task is None
+                else task
+            )
             return dataset.current_task
 
         current_task = update_current_task(self.train_dataset)
@@ -141,14 +147,20 @@ def shuffle_train_val_test_split(dataset, n_samples, val_prop):
     # create train and val data
     data = {name: data[name][:, shuffle_idx] for name in data}
     train_data = {name: data[name][:, :train_size] for name in data}
-    val_data = None if val_prop == 0 else {name: data[name][:, train_size:] for name in data}
+    val_data = (
+        None if val_prop == 0 else {name: data[name][:, train_size:] for name in data}
+    )
 
     train_dataset, val_dataset, test_dataset = (
         copy.deepcopy(dataset),
         copy.deepcopy(dataset),
         copy.deepcopy(dataset),
     )
-    train_dataset.data, val_dataset.data, test_dataset.data = train_data, val_data, test_data
+    train_dataset.data, val_dataset.data, test_dataset.data = (
+        train_data,
+        val_data,
+        test_data,
+    )
     train_dataset.n_samples, val_dataset.n_samples, test_dataset.n_samples = (
         train_size,
         n_samples - train_size,

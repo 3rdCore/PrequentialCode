@@ -24,6 +24,7 @@ class StandardOptimizer(LightningModule):
         n_fit_total=1000,
         regularization_type: Literal["L1", "L2", None] = None,
         lambda_reg: float | None = None,
+        one_hot_x: int | None = None,
     ):
         super().__init__()
         if regularization_type in ["L1", "L2"] and lambda_reg == None:
@@ -33,11 +34,15 @@ class StandardOptimizer(LightningModule):
         self.save_hyperparameters(hparams, ignore=["optimizer", "loss_fn"])
         self.current_inner_epochs = 0
         self.predictor = predictor
+        self.one_hot_x = one_hot_x
         self.loss_fn = loss_fn
         self.current_n_fit = 0
 
     @beartype
     def forward(self, x: Tensor) -> Tensor:
+        if self.one_hot_x is not None:
+            x = torch.nn.functional.one_hot(x, num_classes=self.hparams.one_hot_x)
+            x = x.float().flatten(start_dim=-2)
         return self.predictor(x)
 
     @beartype
@@ -53,9 +58,13 @@ class StandardOptimizer(LightningModule):
         reg = 0.0
         if hasattr(self.hparams, "regularization_type"):
             if self.hparams.regularization_type == "L1":
-                reg = self.hparams.lambda_reg * sum(torch.norm(param, 1) for param in self.parameters())
+                reg = self.hparams.lambda_reg * sum(
+                    torch.norm(param, 1) for param in self.parameters()
+                )
             elif self.hparams.regularization_type == "L2":
-                reg = self.hparams.lambda_reg * sum(torch.norm(param, 2) for param in self.parameters())
+                reg = self.hparams.lambda_reg * sum(
+                    torch.norm(param, 2) for param in self.parameters()
+                )
         self.log("reg_loss", reg, prog_bar=False, on_step=False, on_epoch=True)
 
         return loss + reg
@@ -86,7 +95,10 @@ class StandardOptimizer(LightningModule):
         super().on_train_epoch_end()
         self.current_inner_epochs += 1
 
-        if self.trainer.should_stop or self.current_inner_epochs >= self.hparams.inner_epochs:
+        if (
+            self.trainer.should_stop
+            or self.current_inner_epochs >= self.hparams.inner_epochs
+        ):
             self.on_atomic_fit_end()
 
     @beartype
@@ -137,9 +149,9 @@ class StandardOptimizer(LightningModule):
                 loss += l.item() * x.size(0)
                 total_samples += x.size(0)
                 if self.has_ood:
-                    x_ood, y_ood = data["x_ood"].to(self.device), data[f"{self.hparams.y_key}_ood"].to(
-                        self.device
-                    )
+                    x_ood, y_ood = data["x_ood"].to(self.device), data[
+                        f"{self.hparams.y_key}_ood"
+                    ].to(self.device)
                     preds_ood = self.forward(x_ood)
                     l_ood = self.loss_fn(preds_ood, y_ood)
                     loss_ood += l_ood.item() * x_ood.size(0)
@@ -159,7 +171,9 @@ class StandardOptimizer(LightningModule):
             "val_tasks/n_sample_loss_nexttoken": test_loss,
         }
         if self.has_ood:
-            loss_ood_i = (train_ood_loss + test_ood_loss) / (train_total_samples + test_total_samples)
+            loss_ood_i = (train_ood_loss + test_ood_loss) / (
+                train_total_samples + test_total_samples
+            )
             logs.update({f"val_tasks/n_sample_loss_ood": loss_ood_i})
         self.logger.experiment.log(logs)
 
@@ -167,17 +181,26 @@ class StandardOptimizer(LightningModule):
     def prepare_to_fit_new_task(self, trainer) -> None:
         """Sample a new task and update the dataloaders."""
 
-        log_min_samples = torch.log(torch.tensor(self.hparams.min_train_samples, dtype=torch.float))
-        log_max_samples = torch.log(torch.tensor(trainer.datamodule.max_train_samples, dtype=torch.float))
+        log_min_samples = torch.log(
+            torch.tensor(self.hparams.min_train_samples, dtype=torch.float)
+        )
+        log_max_samples = torch.log(
+            torch.tensor(trainer.datamodule.max_train_samples, dtype=torch.float)
+        )
         n_samples = int(
-            torch.exp(torch.distributions.Uniform(log_min_samples, log_max_samples).sample()).item()
+            torch.exp(
+                torch.distributions.Uniform(log_min_samples, log_max_samples).sample()
+            ).item()
         )
         trainer.datamodule.switch_task(n_samples=n_samples)
         batch_size = self.trainer.datamodule.hparams["batch_size"]
 
     @property
     def has_ood(self) -> bool:
-        return hasattr(self.trainer.datamodule.dataset, "has_ood") and self.trainer.datamodule.dataset.has_ood
+        return (
+            hasattr(self.trainer.datamodule.dataset, "has_ood")
+            and self.trainer.datamodule.dataset.has_ood
+        )
 
 
 class CustomEarlyStopping(Callback):
@@ -197,7 +220,9 @@ class CustomEarlyStopping(Callback):
         self.verbose = verbose
         self.wait_count = 0
         self.stopped_epoch = 0
-        self.best_score = torch.tensor(torch.inf) if mode == "min" else -torch.tensor(torch.inf)
+        self.best_score = (
+            torch.tensor(torch.inf) if mode == "min" else -torch.tensor(torch.inf)
+        )
         self.mode = mode
         self.check_on_train_epoch_end = check_on_train_epoch_end
         self.monitor_op = torch.lt if mode == "min" else torch.gt
@@ -205,7 +230,11 @@ class CustomEarlyStopping(Callback):
     @beartype
     def reset(self) -> None:
         """Resets the EarlyStopping object to the initial state."""
-        self.best_score = torch.tensor(torch.inf) if self.monitor_op == torch.lt else -torch.tensor(torch.inf)
+        self.best_score = (
+            torch.tensor(torch.inf)
+            if self.monitor_op == torch.lt
+            else -torch.tensor(torch.inf)
+        )
         self.wait_count = 0
         self.stopped_epoch = 0
 

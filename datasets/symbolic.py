@@ -21,12 +21,14 @@ class SymbolicDataset(SyntheticDataset):
         n_tasks: int,
         n_samples: int,
         shuffle_samples: bool = True,
+        one_hot_x: bool = True,
         one_hot_y: bool = True,
     ):
         self.x_num_vars = x_num_vars
         self.y_num_vars = y_num_vars
         self.x_num_vals = x_num_vals
         self.y_num_vals = y_num_vals
+        self.one_hot_x = one_hot_x
         self.one_hot_y = one_hot_y
 
         super().__init__(
@@ -44,7 +46,8 @@ class SymbolicDataset(SyntheticDataset):
         x = self.sample_x(n_tasks, n_samples)
         task_dict_params = self.sample_task_params(self.n_tasks)
         y = self.function(x, task_dict_params)
-        x = F.one_hot(x, self.x_num_vals).float().flatten(start_dim=-2)
+        if self.one_hot_x:
+            x = F.one_hot(x, self.x_num_vals).float().flatten(start_dim=-2)
         if self.one_hot_y:
             y = F.one_hot(y, self.y_num_vals).float().flatten(start_dim=-2)
         return {"x": x, "y": y}, task_dict_params
@@ -98,6 +101,7 @@ class Mastermind(SymbolicDataset):
         code_length: int = 8,
         num_colours: int = 6,
         shuffle_samples: bool = True,
+        one_hot_x: bool = True,
         one_hot_y: bool = True,
     ):
         self.code_length = code_length
@@ -110,6 +114,7 @@ class Mastermind(SymbolicDataset):
             n_tasks=n_tasks,
             n_samples=n_samples,
             shuffle_samples=shuffle_samples,
+            one_hot_x=one_hot_x,
             one_hot_y=one_hot_y,
         )
 
@@ -118,7 +123,9 @@ class Mastermind(SymbolicDataset):
         return x
 
     def sample_task_params(self, n_tasks: int | None = None) -> dict[str, Tensor]:
-        code = torch.randint(low=0, high=self.num_colours - 1, size=(n_tasks, self.code_length))
+        code = torch.randint(
+            low=0, high=self.num_colours - 1, size=(n_tasks, self.code_length)
+        )
         return {"code": code}
 
     def function(self, x: LongTensor, params: dict[str, Tensor]) -> LongTensor:

@@ -28,6 +28,7 @@ task:
   n_fit_total: 1000
   regularization_type: null
   lambda_reg: null
+  one_hot_x: null
   loss_fn:
     _target_: torch.nn.MSELoss
 
