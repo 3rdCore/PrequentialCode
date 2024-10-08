@@ -50,7 +50,7 @@ class StandardOptimizer(LightningModule):
         self.log(
             "train_loss", loss, prog_bar=False, on_step=False, on_epoch=True
         )  # exclude regularizer when logging
-        reg = 0
+        reg = 0.0
         if hasattr(self.hparams, "regularization_type"):
             if self.hparams.regularization_type == "L1":
                 reg = self.hparams.lambda_reg * sum(torch.norm(param, 1) for param in self.parameters())
@@ -128,7 +128,10 @@ class StandardOptimizer(LightningModule):
         def compute_loss(data):
             loss, loss_ood, total_samples = 0, 0, 0
             for data, _ in dl:
-                x, y = (data["x"].to(self.device), data[self.hparams.y_key].to(self.device))
+                x, y = (
+                    data["x"].to(self.device),
+                    data[self.hparams.y_key].to(self.device),
+                )
                 preds = self.forward(x)
                 l = self.loss_fn(preds, y)
                 loss += l.item() * x.size(0)

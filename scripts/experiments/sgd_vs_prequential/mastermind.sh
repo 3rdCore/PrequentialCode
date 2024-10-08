@@ -9,9 +9,9 @@ python train.py --multirun hydra/launcher=mila_eric save_dir=/home/mila/e/eric.e
     ++predictor.h_dim=256 \
     ++dataset.train_dataset.one_hot_y=False \
     ++datamodule.batch_size=64 \
-    ++datamodule.max_train_samples=2000 \
+    ++datamodule.max_train_samples=3000 \
     ++datamodule.val_prop=0.2 \
-    ++dataset.train_dataset.n_samples=3000 \
+    ++dataset.train_dataset.n_samples=8000 \
     ++task.inner_epochs=2000 \
     ++task.lr=0.0001 \
     ++trainer.max_epochs=2000000 \
