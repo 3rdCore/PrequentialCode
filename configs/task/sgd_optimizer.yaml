@@ -1,0 +1,39 @@
+#@package _global_
+
+defaults:
+  - predictor: MLP
+  - _self_
+
+task_name: "sgd_optimizer"
+
+datamodule:
+  _target_: datasets.interfaces.AtomicICLDataModule
+  batch_size: 1
+  dataset: ${dataset.train_dataset}
+  max_train_samples: 1000
+  val_prop: 0.2
+
+trainer:
+  max_epochs: 100000
+  log_every_n_steps : 5
+  reload_dataloaders_every_n_epochs: 1
+  enable_progress_bar: False
+
+task:
+  _target_: tasks.sgd_optimizer.StandardOptimizer
+  inner_epochs: 100
+  predictor: ${predictor}
+  min_train_samples: 5
+  lr: 1e-4
+  n_fit_total: 1000
+  regularization_type: null
+  lambda_reg: null
+  one_hot_x: null
+  loss_fn:
+    _target_: torch.nn.MSELoss
+
+callbacks:
+  _target_: tasks.sgd_optimizer.CustomEarlyStopping
+  patience: 10
+  monitor: "val_loss"
+  min_delta: 0.001

@@ -158,6 +158,11 @@ __pycache__
 .DS_Store
 logs/*
 wandb
+papers/preprint/data/*
+log.txt
 
+keys/
+results/
+runs/
 # Keep
 !.gitkeep

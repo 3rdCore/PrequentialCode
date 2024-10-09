@@ -11,6 +11,7 @@ import ast
 import operator as op
 
 import omegaconf
+from beartype import beartype
 
 supported_ast_operators = {
     ast.Add: op.add,
@@ -29,6 +30,7 @@ supported_ast_nodes = (
 )
 
 
+@beartype
 def _ast_eval_expr(node):
     """Evaluates part of an expression (potentially recursively)."""
     if isinstance(node, ast.Num):
@@ -44,6 +46,7 @@ def _ast_eval_expr(node):
         raise ValueError(f"unsupported operation: {type(node)}")
 
 
+@beartype
 def ast_eval(expression: str):
     """Evaluates a simple arithmetic expression using the AST package."""
     node = ast.parse(expression, mode="eval")

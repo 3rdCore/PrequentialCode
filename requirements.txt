@@ -1,1 +1,16 @@
 pre-commit
+numpy
+pandas
+matplotlib
+seaborn
+torch
+lightning
+torchdata
+wandb
+omegaconf
+hydra-core
+beartype
+submitit
+hydra-submitit-launcher
+causal-conv1d
+mamba-ssm[causal-conv1d]

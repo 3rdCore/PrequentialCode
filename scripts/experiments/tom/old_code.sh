@@ -1,0 +1,11 @@
+python train.py --multirun hydra/launcher=mila_eric save_dir=/home/mila/e/eric.elmoznino/scratch/prequential_icl/logs seed=0,1,2,3,4 dataset=regression/linear task=meta_optimizer ++logger.tags=[debug] task/predictor=MLPConcatPredictor ++task.meta_objective=prequential,train ++task.predictor.n_layers=2 ++datamodule.batch_size=16
+
+
+python train.py --multirun hydra/launcher=mila_tom save_dir=/home/mila/t/tom.marty/scratch/prequential_icl/logs seed=0,1,2,3 dataset=regression/sinusoid task=sgd_optimizer ++logger.tags=[periodic-behavior] task/predictor=MLP ++datamodule.batch_size=8,32 ++predictor.h_dim=2048 ++predictor.n_layers=2 ++task.train_val_prop=0.5
+
+
+python train.py --multirun hydra/launcher=mila_tom save_dir=/home/mila/t/tom.marty/scratch/prequential_icl/logs seed=0,1,2 dataset=regression/linear,regression/sinusoid task=meta_optimizer ++logger.tags=[HypSearch/metaopt-expressivity] ++task.meta_objective=prequential,train task/predictor=MLPConcatPredictor ++task.predictor.h_dim=512 ++task.predictor.n_layers=5 ++datamodule.batch_size=16 ++task.context_aggregator.n_layers=4,8,12 ++task.context_aggregator.z_dim=2,4,8 ++task.context_aggregator.h_dim=256 ++task.context_aggregator.n_heads=4
+
+python train.py --multirun hydra/launcher=mila_tom save_dir=/home/mila/t/tom.marty/scratch/prequential_icl/logs seed=0,1,2,3,4,5,6,7,8,9 dataset=regression/linear,regression/sinusoid task=meta_optimizer ++logger.tags=[tom/experiments/sgd_vs_prequential/regression] ++task.meta_objective=prequential,train task/predictor=MLPConcatPredictor ++task.predictor.h_dim=512 ++task.predictor.n_layers=5 ++datamodule.batch_size=16 ++task.context_aggregator.n_layers=2 ++task.context_aggregator.z_dim=2,4,8 ++task.context_aggregator.h_dim=256 ++task.context_aggregator.n_heads=4
+
+python train.py --multirun hydra/launcher=mila_tom save_dir=/home/mila/t/tom.marty/scratch/prequential_icl/logs seed=0,1,2,3,4,5,6,7,8,9 dataset=regression/linear,regression/sinusoid task=meta_optimizer ++logger.tags=[tom/experiments/sgd_vs_prequential/regression] ++task.meta_objective=prequential,train task/predictor=MLPConcatPredictor ++task.predictor.h_dim=512 ++task.predictor.n_layers=5 ++datamodule.batch_size=16 ++task.context_aggregator.n_layers=2 ++task.context_aggregator.z_dim=2,4,8 ++task.context_aggregator.h_dim=256 ++task.context_aggregator.n_heads=4

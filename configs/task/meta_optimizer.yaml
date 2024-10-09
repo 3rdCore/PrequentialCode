@@ -1,0 +1,28 @@
+#@package _global_
+
+defaults:
+  - context_aggregator: transformer
+  - predictor: MLPConcatPredictor
+  - _self_
+
+task_name: "meta_optimizer"
+
+datamodule:
+  _target_: datasets.interfaces.ICLDataModule
+  batch_size: 256
+  train_dataset: ${dataset.train_dataset}
+  val_dataset: ${dataset.val_dataset}
+
+trainer:
+  max_epochs: 50
+
+callbacks:
+
+task:
+  _target_: tasks.meta_optimizer_regression.MetaOptimizerExplicitForRegression
+  meta_objective: prequential
+  min_train_samples: 1
+  lr: 1e-4
+  context_aggregator: ${context_aggregator}
+  predictor: ${predictor}
+  probe_n_context_points: [1, 5, 50]
