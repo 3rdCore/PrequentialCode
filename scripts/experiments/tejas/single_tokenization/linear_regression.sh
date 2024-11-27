@@ -5,8 +5,7 @@ python train.py --multirun hydra/launcher=mila_tejas save_dir=/home/mila/t/tejas
     ++task.meta_objective=prequential \
     ++dataset.train_dataset.x_dim=3 \
     ++dataset.train_dataset.noise=0.2 \
-    task/context_aggregator=transformer2 \
-    ++logger.tags=[experiments/icl_architectures/regression,experiments/separate_tokenization]
+    ++logger.tags=[experiments/icl_architectures/regression,experiments/single_tokenization] &
 
 python train.py --multirun hydra/launcher=mila_tejas save_dir=/home/mila/t/tejas.kasetty/scratch/prequential_icl/logs \
     seed=0,1,2,3,4 \
@@ -14,4 +13,5 @@ python train.py --multirun hydra/launcher=mila_tejas save_dir=/home/mila/t/tejas
     task=meta_optimizer_implicit \
     ++dataset.train_dataset.x_dim=3 \
     ++dataset.train_dataset.noise=0.2 \
-    ++logger.tags=[experiments/icl_architectures/regression,experiments/separate_tokenization]
+    ++task.model._target_=models.implicit.DecoderTransformer2 \
+    ++logger.tags=[experiments/icl_architectures/regression,experiments/single_tokenization]
