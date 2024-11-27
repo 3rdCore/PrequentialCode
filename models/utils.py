@@ -220,9 +220,7 @@ class GatedMLP(nn.Module):
         factory_kwargs = {"device": device, "dtype": dtype}
         super().__init__()
         out_features = out_features if out_features is not None else in_features
-        hidden_features = (
-            hidden_features if hidden_features is not None else int(8 * in_features / 3)
-        )
+        hidden_features = hidden_features if hidden_features is not None else int(8 * in_features / 3)
         hidden_features = (hidden_features + multiple_of - 1) // multiple_of * multiple_of
         self.fc1 = nn.Linear(in_features, 2 * hidden_features, bias=bias, **factory_kwargs)
         self.activation = activation
@@ -316,3 +314,60 @@ class VectorField(nn.Module):
 
     def weight_init(self):
         self.w.data = self.initial_w.clone().detach().to(self.w.device)
+
+
+class CustomEncoder(nn.TransformerEncoder):
+    def __init__(
+        self,
+        encoder_layer: nn.TransformerEncoderLayer,
+        num_layers: int,
+        layer_norm_eps: float,
+        enable_nested_tensor=False,
+    ):
+        self.first = CustomEncoderLayer(
+            embed_dim=encoder_layer.embed_dim,
+            nhead=encoder_layer.nhead,
+            dim_feedforward=encoder_layer.dim_feedforward,
+            dropout=encoder_layer.dropout,
+            layer_norm_eps=encoder_layer.norm.eps,
+        )
+        super().__init__(encoder_layer, num_layers - 1, enable_nested_tensor=enable_nested_tensor)
+        self.layers = nn.ModuleList([self.first, *self.layers])
+        self.num_layers = num_layers
+
+    # def forward(
+    #     self,
+    #     src: torch.Tensor,
+    #     mask: torch.Tensor | None = None,
+    #     src_key_padding_mask: torch.Tensor | None = None,
+    # ) -> torch.Tensor:
+
+    #     output = self.first(src, mask=mask, src_key_padding_mask=src_key_padding_mask)
+    #     for layer in self.layers:
+    #         output = layer(output, src_mask=mask, src_key_padding_mask=src_key_padding_mask)
+    #     return output
+
+
+class CustomEncoderLayer(nn.TransformerEncoderLayer):
+    def _sa_block(
+        self,
+        src: torch.Tensor,
+        attn_mask: torch.Tensor | None,
+        key_padding_mask: torch.Tensor | None,
+        is_causal: bool = False,
+    ) -> torch.Tensor:
+
+        src = src.split(x.shape[-1] // 2, dim=-1)  # Splitting x into x and [x, y]
+        x = src[0]
+        mem = src[1]
+        # Attending to x values
+        x = self.self_attn(
+            x,
+            mem,
+            mem,
+            attn_mask=attn_mask,
+            key_padding_mask=key_padding_mask,
+            is_causal=is_causal,
+            need_weights=False,
+        )[0]
+        return self.dropout1(x)
