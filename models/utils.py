@@ -7,6 +7,61 @@ from torch import Tensor, nn
 from torch.nn import functional as F
 
 
+def _get_seq_len(src: Tensor, batch_first: bool) -> Optional[int]:
+    if src.is_nested:
+        return None
+    else:
+        src_size = src.size()
+        if len(src_size) == 2:
+            # unbatched: S, E
+            return src_size[0]
+        else:
+            # batched: B, S, E if batch_first else S, B, E
+            seq_len_pos = 1 if batch_first else 0
+            return src_size[seq_len_pos]
+
+
+def _detect_is_causal_mask(
+    mask: Optional[Tensor],
+    is_causal: Optional[bool] = None,
+    size: Optional[int] = None,
+) -> bool:
+    """Return whether the given attention mask is causal.
+
+    Warning:
+    If ``is_causal`` is not ``None``, its value will be returned as is.  If a
+    user supplies an incorrect ``is_causal`` hint,
+
+    ``is_causal=False`` when the mask is in fact a causal attention.mask
+       may lead to reduced performance relative to what would be achievable
+       with ``is_causal=True``;
+    ``is_causal=True`` when the mask is in fact not a causal attention.mask
+       may lead to incorrect and unpredictable execution - in some scenarios,
+       a causal mask may be applied based on the hint, in other execution
+       scenarios the specified mask may be used.  The choice may not appear
+       to be deterministic, in that a number of factors like alignment,
+       hardware SKU, etc influence the decision whether to use a mask or
+       rely on the hint.
+    ``size`` if not None, check whether the mask is a causal mask of the provided size
+       Otherwise, checks for any causal mask.
+    """
+    # Prevent type refinement
+    make_causal = is_causal is True
+
+    if is_causal is None and mask is not None:
+        sz = size if size is not None else mask.size(-2)
+        causal_comparison = _generate_square_subsequent_mask(sz, device=mask.device, dtype=mask.dtype)
+
+        # Do not use `torch.equal` so we handle batched masks by
+        # broadcasting the comparison.
+        if mask.size() == causal_comparison.size():
+            make_causal = bool((mask == causal_comparison).all())
+        else:
+            make_causal = False
+
+    return make_causal
+
+
 class FastFoodUpsample(nn.Module):
     def __init__(self, low_dim: int, param_shape: tuple[int, ...]):
         super().__init__()
@@ -316,51 +371,6 @@ class VectorField(nn.Module):
         self.w.data = self.initial_w.clone().detach().to(self.w.device)
 
 
-class CustomEncoder(nn.TransformerEncoder):
-    def __init__(
-        self,
-        encoder_layer: nn.TransformerEncoderLayer,
-        num_layers: int,
-        layer_norm_eps: float,
-        enable_nested_tensor=False,
-    ):
-        self.first = CustomEncoderLayer(
-            embed_dim=encoder_layer.embed_dim,
-            nhead=encoder_layer.nhead,
-            dim_feedforward=encoder_layer.dim_feedforward,
-            dropout=encoder_layer.dropout,
-            layer_norm_eps=encoder_layer.norm.eps,
-        )
-        super().__init__(encoder_layer, num_layers - 1, enable_nested_tensor=enable_nested_tensor)
-        self.layers = nn.ModuleList([self.first, *self.layers])
-        self.num_layers = num_layers
-
-
-class CustomEncoderLayer(nn.TransformerEncoderLayer):
-    def _sa_block(
-        self,
-        src: torch.Tensor,
-        attn_mask: torch.Tensor | None,
-        key_padding_mask: torch.Tensor | None,
-        is_causal: bool = False,
-    ) -> torch.Tensor:
-
-        src = src.split(x.shape[-1] // 2, dim=-1)  # Splitting x into x and [x, y]
-        x = src[0]
-        mem = src[1]
-        # Attending to x values
-        x = self.self_attn(
-            x,
-            mem,
-            mem,
-            attn_mask=attn_mask,
-            key_padding_mask=key_padding_mask,
-            is_causal=is_causal,
-            need_weights=False,
-        )[0]
-        return self.dropout1(x)
-
-
 class CustomDecoderLayer(nn.TransformerDecoderLayer):
     def forward(
         self,
@@ -378,14 +388,24 @@ class CustomDecoderLayer(nn.TransformerDecoderLayer):
             x = x + self._mha_block(
                 self.norm2(x), memory, memory_mask, memory_key_padding_mask, memory_is_causal
             )
+            memory = memory + self._mha_block(
+                self.norm2(memory), memory, memory_mask, memory_key_padding_mask, memory_is_causal
+            )
+
             x = x + self._ff_block(self.norm3(x))
+            memory = memory + self._ff_block(self.norm3(memory))
         else:
             x = self.norm2(
                 x + self._mha_block(x, memory, memory_mask, memory_key_padding_mask, memory_is_causal)
             )
+            memory = self.norm2(
+                memory
+                + self._mha_block(memory, memory, memory_mask, memory_key_padding_mask, memory_is_causal)
+            )
             x = self.norm3(x + self._ff_block(x))
+            memory = self.norm3(memory + self._ff_block(memory))
 
-        return x
+        return x, memory
 
     # multihead attention block
     def _mha_block(
@@ -407,3 +427,135 @@ class CustomDecoderLayer(nn.TransformerDecoderLayer):
             need_weights=False,
         )[0]
         return self.dropout2(x)
+
+
+class CustomDecoder(nn.TransformerDecoder):
+    def forward(
+        self,
+        tgt: Tensor,
+        memory: Tensor,
+        tgt_mask: Optional[Tensor] = None,
+        memory_mask: Optional[Tensor] = None,
+        tgt_key_padding_mask: Optional[Tensor] = None,
+        memory_key_padding_mask: Optional[Tensor] = None,
+        tgt_is_causal: Optional[bool] = None,
+        memory_is_causal: bool = False,
+    ) -> Tensor:
+        r"""Pass the inputs (and mask) through the decoder layer in turn.
+
+        Args:
+            tgt: the sequence to the decoder (required).
+            memory: the sequence from the last layer of the encoder (required).
+            tgt_mask: the mask for the tgt sequence (optional).
+            memory_mask: the mask for the memory sequence (optional).
+            tgt_key_padding_mask: the mask for the tgt keys per batch (optional).
+            memory_key_padding_mask: the mask for the memory keys per batch (optional).
+            tgt_is_causal: If specified, applies a causal mask as ``tgt mask``.
+                Default: ``None``; try to detect a causal mask.
+                Warning:
+                ``tgt_is_causal`` provides a hint that ``tgt_mask`` is
+                the causal mask. Providing incorrect hints can result in
+                incorrect execution, including forward and backward
+                compatibility.
+            memory_is_causal: If specified, applies a causal mask as
+                ``memory mask``.
+                Default: ``False``.
+                Warning:
+                ``memory_is_causal`` provides a hint that
+                ``memory_mask`` is the causal mask. Providing incorrect
+                hints can result in incorrect execution, including
+                forward and backward compatibility.
+
+        Shape:
+            see the docs in :class:`~torch.nn.Transformer`.
+        """
+        output = tgt
+
+        seq_len = _get_seq_len(tgt, self.layers[0].self_attn.batch_first)
+        tgt_is_causal = _detect_is_causal_mask(tgt_mask, tgt_is_causal, seq_len)
+
+        for mod in self.layers:
+            output, memory = mod(
+                output,
+                memory,
+                tgt_mask=tgt_mask,
+                memory_mask=memory_mask,
+                tgt_key_padding_mask=tgt_key_padding_mask,
+                memory_key_padding_mask=memory_key_padding_mask,
+                tgt_is_causal=tgt_is_causal,
+                memory_is_causal=memory_is_causal,
+            )
+
+        if self.norm is not None:
+            output = self.norm(output)
+
+        return output
+
+
+class CustomDecoderLayer2(CustomDecoderLayer):
+    def __init__(
+        self,
+        d_model: int,
+        nhead: int,
+        dim_feedforward: int = 2048,
+        dropout: float = 0.1,
+        activation=F.relu,
+        layer_norm_eps: float = 1e-5,
+        batch_first: bool = False,
+        norm_first: bool = False,
+        bias: bool = True,
+        device=None,
+        dtype=None,
+    ) -> None:
+        super(CustomDecoderLayer2, self).__init__(
+            d_model,
+            nhead,
+            dim_feedforward,
+            dropout,
+            activation,
+            layer_norm_eps,
+            batch_first,
+            norm_first,
+            bias,
+            device,
+            dtype,
+        )
+
+        self.encoder_layer = nn.TransformerEncoderLayer(
+            d_model,
+            nhead,
+            dim_feedforward,
+            dropout,
+            activation,
+            layer_norm_eps,
+            batch_first,
+            norm_first,
+            bias,
+            device,
+            dtype,
+        )
+
+    def forward(
+        self,
+        tgt: Tensor,
+        memory: Tensor,
+        tgt_mask: Optional[Tensor] = None,
+        memory_mask: Optional[Tensor] = None,
+        tgt_key_padding_mask: Optional[Tensor] = None,
+        memory_key_padding_mask: Optional[Tensor] = None,
+        tgt_is_causal: bool = False,
+        memory_is_causal: bool = False,
+    ) -> Tensor:
+        x = tgt
+        x, _ = super().forward(
+            x,
+            memory,
+            tgt_mask,
+            memory_mask,
+            tgt_key_padding_mask,
+            memory_key_padding_mask,
+            tgt_is_causal,
+            memory_is_causal,
+        )
+        memory = self.encoder_layer(memory, memory_mask, memory_key_padding_mask)
+        return x, memory

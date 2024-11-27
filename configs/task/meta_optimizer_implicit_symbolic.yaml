@@ -22,7 +22,7 @@ task:
   min_train_samples: 1
   lr: 1e-4
   model:
-    _target_: models.implicit.DecoderTransformer
+    _target_: models.implicit.DecoderTransformer4
     x_dim: ${dataset.train_dataset.x_dim}
     y_dim: ${dataset.train_dataset.y_dim}
     h_dim: 256
