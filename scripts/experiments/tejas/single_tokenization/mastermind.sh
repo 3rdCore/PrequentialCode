@@ -6,8 +6,7 @@ python train.py --multirun hydra/launcher=mila_tejas save_dir=/home/mila/t/tejas
     ++predictor.x_dim=48  \
     ++predictor.y_dim=18  \
     ++trainer.max_epochs=80  \
-    task/context_aggregator=transformer2 \
-    ++logger.tags=[experiments/icl_architectures/symbolic,experiments/separate_tokenization]
+    ++logger.tags=[experiments/icl_architectures/symbolic,experiments/single_tokenization] &
 
 python train.py --multirun hydra/launcher=mila_eric save_dir=/home/mila/e/eric.elmoznino/scratch/prequential_icl/logs \
     seed=0,1,2,3,4 \
@@ -16,4 +15,5 @@ python train.py --multirun hydra/launcher=mila_eric save_dir=/home/mila/e/eric.e
     ++task.model.x_dim=48 \
     ++task.model.y_dim=18 \
     ++trainer.max_epochs=80 \
-    ++logger.tags=[experiments/icl_architectures/symbolic,experiments/separate_tokenization]
+    ++task.model._target_=models.implicit.DecoderTransformer2 \
+    ++logger.tags=[experiments/icl_architectures/symbolic,experiments/single_tokenization]
