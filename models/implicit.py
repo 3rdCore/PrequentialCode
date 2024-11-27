@@ -4,7 +4,9 @@ import torch
 from beartype import beartype
 from torch import Tensor, nn
 
-from utils import CustomTransformerEncoder, PositionalEncoding
+from utils import PositionalEncoding
+
+from .utils import CustomDecoderLayer
 
 
 class ImplicitModel(ABC, nn.Module):
@@ -115,12 +117,14 @@ class DecoderTransformer2(ImplicitModel):
         self.x_dim = x_dim
         self.y_dim = y_dim
         self.x_keys = x_keys
-        slef.y_keys = y_keys
+        self.y_keys = y_keys
 
         self.x_embedding = nn.Linear(x_dim, h_dim)
         self.xy_embedding = nn.Linear(x_dim + y_dim, h_dim)
-        self.encoder = CustomTransformerEncoder(
-            nn.TransformerEncoderLayer(
+        self.xy0_embedding = nn.Parameter(torch.zeros(1, 1, h_dim))
+
+        self.decoder = nn.TransformerDecoder(
+            CustomDecoderLayer(
                 d_model=h_dim,
                 nhead=n_heads,
                 dim_feedforward=mlp_dim if mlp_dim is not None else 2 * h_dim,
@@ -128,14 +132,13 @@ class DecoderTransformer2(ImplicitModel):
                 layer_norm_eps=layer_norm_eps,
             ),
             num_layers=n_layers,
-            enable_nested_tensor=False,
         )
         self.readout = nn.Linear(h_dim, y_dim)
         self.init_weights()
 
     @beartype
     def init_weights(self) -> None:
-        for p in self.encoder.parameters():
+        for p in self.decoder.parameters():
             if p.dim() > 1:  # skip biases
                 nn.init.xavier_uniform_(p)
 
@@ -145,16 +148,18 @@ class DecoderTransformer2(ImplicitModel):
         x, y = torch.cat([x[name] for name in self.x_keys], dim=-1), torch.cat(
             [x[name] for name in self.y_keys], dim=-1
         )
+
         seq_x = self.x_embedding(x)
         seq_xy = self.xy_embedding(torch.cat([x, y], dim=-1))
-        seq = torch.cat([seq_x, seq_xy], dim=-1)
+        xy0 = self.xy0_embedding.expand(1, seq_xy.shape[1], -1)
+        seq_xy = torch.cat([xy0, seq_xy[:-1]], dim=0)
         # Encode the sequence
-        causal_mask = torch.nn.Transformer.generate_square_subsequent_mask(seq.shape[0])
-        seq = self.encoder.forward(seq, mask=causal_mask, is_causal=True)
+        causal_mask = torch.nn.Transformer.generate_square_subsequent_mask(seq_x.shape[0])
+        seq = self.decoder.forward(seq_x, seq_xy, memory_mask=causal_mask, memory_is_causal=True)
 
         # Readout
         y = self.readout(seq)
         y = y.split(self.y_dim, dim=-1)
-        y = {name: y[i] for i, name in enumerate(self.keys[1:])}
+        y = {name: y[i] for i, name in enumerate(self.y_keys)}
 
         return y

@@ -1,9 +1,9 @@
-from typing import Any
+from typing import Any, Optional
 
 import numpy as np
 import torch
 from beartype import beartype
-from torch import nn
+from torch import Tensor, nn
 from torch.nn import functional as F
 
 
@@ -335,18 +335,6 @@ class CustomEncoder(nn.TransformerEncoder):
         self.layers = nn.ModuleList([self.first, *self.layers])
         self.num_layers = num_layers
 
-    # def forward(
-    #     self,
-    #     src: torch.Tensor,
-    #     mask: torch.Tensor | None = None,
-    #     src_key_padding_mask: torch.Tensor | None = None,
-    # ) -> torch.Tensor:
-
-    #     output = self.first(src, mask=mask, src_key_padding_mask=src_key_padding_mask)
-    #     for layer in self.layers:
-    #         output = layer(output, src_mask=mask, src_key_padding_mask=src_key_padding_mask)
-    #     return output
-
 
 class CustomEncoderLayer(nn.TransformerEncoderLayer):
     def _sa_block(
@@ -371,3 +359,51 @@ class CustomEncoderLayer(nn.TransformerEncoderLayer):
             need_weights=False,
         )[0]
         return self.dropout1(x)
+
+
+class CustomDecoderLayer(nn.TransformerDecoderLayer):
+    def forward(
+        self,
+        tgt: Tensor,
+        memory: Tensor,
+        tgt_mask: Optional[Tensor] = None,
+        memory_mask: Optional[Tensor] = None,
+        tgt_key_padding_mask: Optional[Tensor] = None,
+        memory_key_padding_mask: Optional[Tensor] = None,
+        tgt_is_causal: bool = False,
+        memory_is_causal: bool = False,
+    ) -> Tensor:
+        x = tgt
+        if self.norm_first:
+            x = x + self._mha_block(
+                self.norm2(x), memory, memory_mask, memory_key_padding_mask, memory_is_causal
+            )
+            x = x + self._ff_block(self.norm3(x))
+        else:
+            x = self.norm2(
+                x + self._mha_block(x, memory, memory_mask, memory_key_padding_mask, memory_is_causal)
+            )
+            x = self.norm3(x + self._ff_block(x))
+
+        return x
+
+    # multihead attention block
+    def _mha_block(
+        self,
+        x: Tensor,
+        mem: Tensor,
+        attn_mask: Optional[torch.Tensor],
+        key_padding_mask: Optional[torch.Tensor],
+        is_causal: bool = False,
+    ) -> Tensor:
+        # TODO: Update mem using self_attn
+        x = self.multihead_attn(
+            x,
+            mem,
+            mem,
+            attn_mask=attn_mask,
+            key_padding_mask=key_padding_mask,
+            is_causal=is_causal,
+            need_weights=False,
+        )[0]
+        return self.dropout2(x)
