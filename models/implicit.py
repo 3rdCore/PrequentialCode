@@ -123,6 +123,16 @@ class DecoderTransformer2(ImplicitModel):
         self.xy_embedding = nn.Linear(x_dim + y_dim, h_dim)
         self.xy0_embedding = nn.Parameter(torch.zeros(1, 1, h_dim))
 
+        self.encoder = nn.TransformerEncoder(
+            nn.TransformerEncoderLayer(
+                d_model=h_dim,
+                nhead=n_heads,
+                dim_feedforward=mlp_dim if mlp_dim is not None else 2 * h_dim,
+                dropout=dropout,
+                layer_norm_eps=layer_norm_eps,
+            ),
+            num_layers=n_layers,
+        )
         self.decoder = nn.TransformerDecoder(
             CustomDecoderLayer(
                 d_model=h_dim,
@@ -154,8 +164,10 @@ class DecoderTransformer2(ImplicitModel):
         xy0 = self.xy0_embedding.expand(1, seq_xy.shape[1], -1)
         seq_xy = torch.cat([xy0, seq_xy[:-1]], dim=0)
         # Encode the sequence
+        memory = self.encoder.forward(seq_xy)
         causal_mask = torch.nn.Transformer.generate_square_subsequent_mask(seq_x.shape[0])
-        seq = self.decoder.forward(seq_x, seq_xy, memory_mask=causal_mask, memory_is_causal=True)
+        self.encoder.forward(seq_x, mask=causal_mask, is_causal=True)
+        seq = self.decoder.forward(seq_x, memory, memory_mask=causal_mask, memory_is_causal=True)
 
         # Readout
         y = self.readout(seq)
