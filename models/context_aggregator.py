@@ -41,7 +41,6 @@ class ContextAggregator(ABC, nn.Module):
 
 
 class Transfoptimizer(ContextAggregator):
-    @beartype
     def __init__(
         self,
         x_dim: int,  # number of total features in the input
@@ -59,6 +58,7 @@ class Transfoptimizer(ContextAggregator):
         self.x_dim = x_dim
         self.z_dim = z_dim
         self.x_keys = x_keys
+        self.h_dim = h_dim
 
         self.x_embedding = nn.Linear(x_dim, h_dim)
         self.x0_embedding = nn.Parameter(torch.zeros(1, 1, h_dim))
@@ -178,7 +178,6 @@ class Transoptimizer2(ContextAggregator):
 
 
 class TransfoptimizerSequence(Transfoptimizer):
-    @beartype
     def __init__(
         self,
         *args,
@@ -207,7 +206,6 @@ class TransfoptimizerSequence(Transfoptimizer):
 
 
 class Mambaoptimizer(ContextAggregator):
-    @beartype
     def __init__(
         self,
         x_dim: int,  # number of total features in the input
