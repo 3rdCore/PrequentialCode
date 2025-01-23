@@ -32,6 +32,7 @@ class CausalTransformer(ImplicitModel):
         n_layers: int,
         n_heads: int,
         x_key: tuple[str] = "x",
+        y_key: tuple[str] = "y",
         mlp_dim: int | None = None,
         layer_norm_eps: float = 1e-5,
         dropout: float = 0.0,
@@ -41,6 +42,7 @@ class CausalTransformer(ImplicitModel):
 
         self.x_dim = x_dim
         self.x_key = x_key
+        self.y_key = y_key
 
         self.x_embedding = nn.Linear(x_dim, h_dim)
         self.position_encoding = PositionalEncoding(h_dim, max_len=max_seq_len + 1)
@@ -79,7 +81,7 @@ class CausalTransformer(ImplicitModel):
         # Readout
         x = self.readout(x)
 
-        return {self.x_key: x}
+        return {self.y_key: x}
 
 
 class DecoderTransformer(ImplicitModel):
@@ -213,8 +215,12 @@ class DecoderTransformer2(ImplicitModel):
         xy0 = self.xy0_embedding.expand(1, seq_xy.shape[1], -1)
         seq_xy = torch.cat([xy0, seq_xy[:-1]], dim=0)
         # Encode the sequence
-        causal_mask = torch.nn.Transformer.generate_square_subsequent_mask(seq_x.shape[0]).to(seq_x.device)
-        seq = self.decoder.forward(seq_x, seq_xy, memory_mask=causal_mask, memory_is_causal=True)
+        causal_mask = torch.nn.Transformer.generate_square_subsequent_mask(
+            seq_x.shape[0]
+        ).to(seq_x.device)
+        seq = self.decoder.forward(
+            seq_x, seq_xy, memory_mask=causal_mask, memory_is_causal=True
+        )
 
         # Readout
         y = self.readout(seq)
@@ -281,8 +287,12 @@ class DecoderTransformer3(ImplicitModel):
         xy0 = self.xy0_embedding.expand(1, seq_xy.shape[1], -1)
         seq_xy = torch.cat([xy0, seq_xy[:-1]], dim=0)
         # Encode the sequence
-        causal_mask = torch.nn.Transformer.generate_square_subsequent_mask(seq_x.shape[0]).to(seq_x.device)
-        seq = self.decoder.forward(seq_x, seq_xy, memory_mask=causal_mask, memory_is_causal=True)
+        causal_mask = torch.nn.Transformer.generate_square_subsequent_mask(
+            seq_x.shape[0]
+        ).to(seq_x.device)
+        seq = self.decoder.forward(
+            seq_x, seq_xy, memory_mask=causal_mask, memory_is_causal=True
+        )
 
         # Readout
         y = self.readout(seq)
@@ -349,8 +359,12 @@ class DecoderTransformer4(ImplicitModel):
         xy0 = self.xy0_embedding.expand(1, seq_xy.shape[1], -1)
         seq_xy = torch.cat([xy0, seq_xy[:-1]], dim=0)
         # Encode the sequence
-        causal_mask = torch.nn.Transformer.generate_square_subsequent_mask(seq_x.shape[0]).to(seq_x.device)
-        seq = self.decoder.forward(seq_x, seq_xy, memory_mask=causal_mask, memory_is_causal=True)
+        causal_mask = torch.nn.Transformer.generate_square_subsequent_mask(
+            seq_x.shape[0]
+        ).to(seq_x.device)
+        seq = self.decoder.forward(
+            seq_x, seq_xy, memory_mask=causal_mask, memory_is_causal=True
+        )
 
         # Readout
         y = self.readout(seq)
