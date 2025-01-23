@@ -8,4 +8,5 @@ python train.py --multirun hydra/launcher=mila_eric save_dir=/home/mila/e/eric.e
     ++predictor.x_dim=50 \
     ++predictor.y_dim=50 \
     ++predictor.y_key="x" \
+    ++trainer.max_epochs=18 \
     ++logger.tags=[experiments/icl_architectures/symbolic]
