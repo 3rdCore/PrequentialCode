@@ -3,7 +3,7 @@ from torch import Tensor
 from torch.nn import CrossEntropyLoss
 from torch.nn.modules.loss import _Loss
 
-from datasets.symbolic import SymbolicDataset
+from datasets.symbolic import SyntheticSymbolicDataset
 from models.context_aggregator import ContextAggregator
 from models.implicit import ImplicitModel
 from models.predictor import Predictor
@@ -34,7 +34,7 @@ class MetaOptimizerExplicitForSymbolic(MetaOptimizerExplicit):
     def loss_function(self, target: dict[str, Tensor], preds: dict[str, Tensor]) -> Tensor:
         """
         Args:
-            target (dict[str, Tensor]): Inputs/targets (samples, tasks, n_vars).
+            target (dict[str, Tensor]): Inputs/targets (samples, tasks, n_vars * n_vals).
             preds (dict[str, Tensor]): Predictions (samples, tasks, n_vars * n_vals).
 
         Returns:
@@ -49,8 +49,11 @@ class MetaOptimizerExplicitForSymbolic(MetaOptimizerExplicit):
 
     @property
     def y_num_vars(self) -> int:
-        dataset: SymbolicDataset = self.trainer.datamodule.train_dataset
-        return dataset.y_num_vars
+        dataset = self.trainer.datamodule.train_dataset
+        if isinstance(dataset, SyntheticSymbolicDataset):
+            return dataset.y_num_vars
+        else:
+            return 1
 
 
 class MetaOptimizerImplicitForSymbolic(MetaOptimizerImplicit):
@@ -68,7 +71,7 @@ class MetaOptimizerImplicitForSymbolic(MetaOptimizerImplicit):
     def loss_function(self, target: dict[str, Tensor], preds: dict[str, Tensor]) -> Tensor:
         """
         Args:
-            target (dict[str, Tensor]): Inputs/targets (samples, tasks, n_vars).
+            target (dict[str, Tensor]): Inputs/targets (samples, tasks, n_vars * n_vals).
             preds (dict[str, Tensor]): Predictions (samples, tasks, n_vars * n_vals).
 
         Returns:
@@ -83,5 +86,8 @@ class MetaOptimizerImplicitForSymbolic(MetaOptimizerImplicit):
 
     @property
     def y_num_vars(self) -> int:
-        dataset: SymbolicDataset = self.trainer.datamodule.train_dataset
-        return dataset.y_num_vars
+        dataset = self.trainer.datamodule.train_dataset
+        if isinstance(dataset, SyntheticSymbolicDataset):
+            return dataset.y_num_vars
+        else:
+            return 1

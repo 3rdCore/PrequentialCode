@@ -1,0 +1,8 @@
+name: "mastermind"
+
+train_dataset:
+  _target_: datasets.symbolic.HMM
+  data_path: "/home/mila/e/eric.elmoznino/scratch/prequential_coding/data/hmm/train.pt"
+val_dataset:
+  _target_: datasets.symbolic.HMM
+  data_path: "/home/mila/e/eric.elmoznino/scratch/prequential_coding/data/hmm/val.pt"

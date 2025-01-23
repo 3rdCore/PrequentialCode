@@ -6,7 +6,7 @@ from torch import Tensor, nn
 
 from utils import PositionalEncoding
 
-from .utils import CustomDecoderLayer, CustomDecoder, CustomDecoderLayer2
+from .utils import CustomDecoder, CustomDecoderLayer, CustomDecoderLayer2
 
 
 class ImplicitModel(ABC, nn.Module):
@@ -21,6 +21,65 @@ class ImplicitModel(ABC, nn.Module):
             dict[str, Tensor]: Prediction on the last sample given all previous samples, each with shape (samples + 1, tasks, *). Note that each index along the 'samples' dimension should only depend on prior samples in x.
         """
         pass
+
+
+class CausalTransformer(ImplicitModel):
+    @beartype
+    def __init__(
+        self,
+        x_dim: int,
+        h_dim: int,
+        n_layers: int,
+        n_heads: int,
+        x_key: tuple[str] = "x",
+        mlp_dim: int | None = None,
+        layer_norm_eps: float = 1e-5,
+        dropout: float = 0.0,
+        max_seq_len: int = 5000,
+    ) -> None:
+        super().__init__()
+
+        self.x_dim = x_dim
+        self.x_key = x_key
+
+        self.x_embedding = nn.Linear(x_dim, h_dim)
+        self.position_encoding = PositionalEncoding(h_dim, max_len=max_seq_len + 1)
+        self.encoder = nn.TransformerEncoder(
+            nn.TransformerEncoderLayer(
+                d_model=h_dim,
+                nhead=n_heads,
+                dim_feedforward=mlp_dim if mlp_dim is not None else 2 * h_dim,
+                dropout=dropout,
+                layer_norm_eps=layer_norm_eps,
+            ),
+            num_layers=n_layers,
+            enable_nested_tensor=False,
+        )
+        self.readout = nn.Linear(h_dim, x_dim)
+
+        self.init_weights()
+
+    @beartype
+    def init_weights(self) -> None:
+        for p in self.encoder.parameters():
+            if p.dim() > 1:  # skip biases
+                nn.init.xavier_uniform_(p)
+
+    @beartype
+    def forward(self, x: dict[str, Tensor]) -> dict[str, Tensor]:
+        # Construct input tensor
+        x = x[self.x_key]
+        x = self.x_embedding(x)
+        x = self.position_encoding(x)
+
+        # Encode the sequence
+        causal_mask = torch.nn.Transformer.generate_square_subsequent_mask(x.shape[0])
+        x = self.encoder.forward(x, mask=causal_mask, is_causal=True)
+
+        # Readout
+        x = self.readout(x)
+
+        return {self.x_key: x}
 
 
 class DecoderTransformer(ImplicitModel):
@@ -164,6 +223,7 @@ class DecoderTransformer2(ImplicitModel):
 
         return y
 
+
 class DecoderTransformer3(ImplicitModel):
     @beartype
     def __init__(
@@ -230,6 +290,7 @@ class DecoderTransformer3(ImplicitModel):
         y = {name: y[i] for i, name in enumerate(self.y_keys)}
 
         return y
+
 
 class DecoderTransformer4(ImplicitModel):
     @beartype

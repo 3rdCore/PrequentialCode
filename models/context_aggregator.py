@@ -158,7 +158,6 @@ class Transoptimizer2(ContextAggregator):
 
     @beartype
     def forward(self, x: dict[str, Tensor]) -> dict[str, Tensor]:
-
         x, y = torch.cat([x[name] for name in self.x_keys], dim=-1), torch.cat(
             [x[name] for name in self.y_keys], dim=-1
         )
@@ -170,6 +169,35 @@ class Transoptimizer2(ContextAggregator):
         causal_mask = torch.nn.Transformer.generate_square_subsequent_mask(x.shape[0])
         features = self.context_encoder.forward(x, mask=causal_mask, is_causal=True)
         z = self.projection(features[::2])
+        return {"z": z}
+
+    @property
+    @beartype
+    def z_shape(self) -> dict[str, int]:
+        return {"z": self.z_dim}
+
+
+class TransfoptimizerSequence(Transfoptimizer):
+    @beartype
+    def __init__(
+        self,
+        *args,
+        max_seq_len: int = 5000,
+        **kwargs,
+    ) -> None:
+        super().__init__(*args, **kwargs)
+        self.position_encoding = PositionalEncoding(self.h_dim, max_len=max_seq_len + 1)
+
+    @beartype
+    def forward(self, x: dict[str, Tensor]) -> dict[str, Tensor]:
+        x = torch.cat([x[name] for name in self.x_keys], dim=-1)
+        x = self.x_embedding(x)
+        x0 = self.x0_embedding.expand(1, x.shape[1], -1)
+        x = torch.cat([x0, x], dim=0)
+        x = self.position_encoding(x)
+        causal_mask = torch.nn.Transformer.generate_square_subsequent_mask(x.shape[0])
+        features = self.context_encoder.forward(x, mask=causal_mask, is_causal=True)
+        z = self.projection(features)
         return {"z": z}
 
     @property

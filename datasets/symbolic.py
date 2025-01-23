@@ -6,11 +6,12 @@ from beartype import beartype
 from torch import FloatTensor, LongTensor, Tensor
 from torch.nn import functional as F
 
+from datasets.interfaces import TaskDistDataset
 from datasets.synthetic import SyntheticDataset
 from utils import bincount_batched
 
 
-class SymbolicDataset(SyntheticDataset):
+class SyntheticSymbolicDataset(SyntheticDataset):
     @beartype
     def __init__(
         self,
@@ -92,7 +93,7 @@ class SymbolicDataset(SyntheticDataset):
         pass
 
 
-class Mastermind(SymbolicDataset):
+class Mastermind(SyntheticSymbolicDataset):
     @beartype
     def __init__(
         self,
@@ -123,9 +124,7 @@ class Mastermind(SymbolicDataset):
         return x
 
     def sample_task_params(self, n_tasks: int | None = None) -> dict[str, Tensor]:
-        code = torch.randint(
-            low=0, high=self.num_colours - 1, size=(n_tasks, self.code_length)
-        )
+        code = torch.randint(low=0, high=self.num_colours - 1, size=(n_tasks, self.code_length))
         return {"code": code}
 
     def function(self, x: LongTensor, params: dict[str, Tensor]) -> LongTensor:
@@ -136,3 +135,25 @@ class Mastermind(SymbolicDataset):
             bincount_batched(x, max_val=self.num_colours),
         ).sum(dim=-1)
         return torch.stack([full_correct, colour_correct], dim=-1)
+
+
+class HMM(TaskDistDataset):
+    # TODO: Make this a SyntheticSymbolicDataset and implement the data-generation
+    @beartype
+    def __init__(
+        self,
+        data_path: str,
+    ):
+        super().__init__()
+        self.data = torch.load(data_path, map_location="cpu")
+        self.n_tasks, self.n_samples = self.data.shape
+        self.n_vals = (self.data.max() + 1).item()
+
+    @beartype
+    def __len__(self) -> int:
+        return len(self.data)
+
+    @beartype
+    def __getitem__(self, index: int) -> tuple[dict[str, Tensor], None]:
+        x = {"x": F.one_hot(self.data[index].long(), self.n_vals).float()}
+        return x, None
