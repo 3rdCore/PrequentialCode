@@ -124,7 +124,9 @@ class Mastermind(SyntheticSymbolicDataset):
         return x
 
     def sample_task_params(self, n_tasks: int | None = None) -> dict[str, Tensor]:
-        code = torch.randint(low=0, high=self.num_colours - 1, size=(n_tasks, self.code_length))
+        code = torch.randint(
+            low=0, high=self.num_colours - 1, size=(n_tasks, self.code_length)
+        )
         return {"code": code}
 
     def function(self, x: LongTensor, params: dict[str, Tensor]) -> LongTensor:
@@ -168,6 +170,7 @@ class HMM(TaskDistDataset):
             y = self.data[index].long()
             if self.supervised_one_hot_y:
                 y = F.one_hot(y, self.n_vals).float()
+            return {"x": x, "y": y}, None
         else:
             x, y = self.data[index, :-1], self.data[index, 1:]
             return {
