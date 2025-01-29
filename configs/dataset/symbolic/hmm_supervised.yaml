@@ -5,8 +5,10 @@ train_dataset:
   data_path: "/home/mila/e/eric.elmoznino/scratch/prequential_icl/data/hmm/train.pt"
   supervised: True
   supervised_one_hot_y: True
+  max_tasks: null
 val_dataset:
   _target_: datasets.symbolic.HMM
   data_path: "/home/mila/e/eric.elmoznino/scratch/prequential_icl/data/hmm/val.pt"
   supervised: ${dataset.train_dataset.supervised}
   supervised_one_hot_y: ${dataset.train_dataset.supervised_one_hot_y}
+  max_tasks: ${dataset.train_dataset.max_tasks}

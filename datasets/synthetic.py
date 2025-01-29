@@ -13,7 +13,9 @@ class TaskDistDataset(ABC, MapDataPipe):
         pass
 
     @abstractmethod
-    def __getitem__(self, index: int) -> tuple[dict[str, Tensor], dict[str, Any] | None]:
+    def __getitem__(
+        self, index: int
+    ) -> tuple[dict[str, Tensor], dict[str, Any] | None]:
         """Get multiple samples from multiple tasks.
 
         Args:
@@ -71,7 +73,6 @@ class SyntheticDataset(TaskDistDataset):
 
 
 class AtomicSyntheticDataset:
-    @beartype
     def __init__(
         self,
         multi_dataset: SyntheticDataset,
@@ -86,7 +87,9 @@ class AtomicSyntheticDataset:
         return self.n_samples
 
     @beartype
-    def __getitem__(self, index: int) -> tuple[dict[str, Tensor], dict[str, Any] | None]:
+    def __getitem__(
+        self, index: int
+    ) -> tuple[dict[str, Tensor], dict[str, Any] | None]:
         data, task_params = self.multi_dataset[self.current_task]
         data = {name: data[name][index] for name in data}
 

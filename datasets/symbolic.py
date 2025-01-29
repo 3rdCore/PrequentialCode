@@ -148,29 +148,34 @@ class HMM(TaskDistDataset):
         supervised: bool = False,
         supervised_one_hot_y: bool = True,
         supervised_pe_dim: int = 256,
+        max_tasks: int | None = None,
     ):
         super().__init__()
         self.data = torch.load(data_path, map_location="cpu")
+        if max_tasks is not None:
+            self.data = self.data[:max_tasks]
         self.n_tasks = self.data.shape[0]
         self.n_samples = self.data.shape[1]
         self.n_vals = (self.data.max() + 1).item()
         self.supervised = supervised
         self.supervised_one_hot_y = supervised_one_hot_y
         if supervised:
-            self.pe = PositionalEncoding(d_model=supervised_pe_dim).pe
+            pe = PositionalEncoding(d_model=supervised_pe_dim).pe
+            x = pe[: self.n_samples, 0].unsqueeze(0).expand(self.n_tasks, -1, -1)
+            y = self.data.long()
+            self.data = {"x": x, "y": y}
 
     @beartype
     def __len__(self) -> int:
         return len(self.data)
 
-    @beartype
     def __getitem__(self, index: int) -> tuple[dict[str, Tensor], None]:
         if self.supervised:
-            x = self.pe[: self.n_samples, 0]
-            y = self.data[index].long()
+            x = self.data["x"][index]
+            y = self.data["y"][index]
             if self.supervised_one_hot_y:
                 y = F.one_hot(y, self.n_vals).float()
-            return {"x": x, "y": y}, None
+            return {"x": x, "y": y}, {"dummy": torch.nan}
         else:
             x, y = self.data[index, :-1], self.data[index, 1:]
             return {

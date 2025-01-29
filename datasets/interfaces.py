@@ -140,12 +140,12 @@ class AtomicICLDataModule(LightningDataModule):
 @beartype
 def shuffle_train_val_test_split(dataset, n_samples, val_prop):
     train_size = int(n_samples * (1 - val_prop))
-    shuffle_idx = torch.randperm(n_samples)
     data = dataset.data
+    shuffle_idx = torch.randperm(data[list(data.keys())[0]].shape[1])
+    data = {name: data[name][:, shuffle_idx] for name in data}
     # create test data
     test_data = {name: data[name][:, n_samples:] for name in data}
     # create train and val data
-    data = {name: data[name][:, shuffle_idx] for name in data}
     train_data = {name: data[name][:, :train_size] for name in data}
     val_data = (
         None if val_prop == 0 else {name: data[name][:, train_size:] for name in data}
