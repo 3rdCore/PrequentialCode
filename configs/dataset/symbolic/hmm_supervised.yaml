@@ -1,0 +1,12 @@
+name: "hmm_supervised"
+
+train_dataset:
+  _target_: datasets.symbolic.HMM
+  data_path: "/home/mila/e/eric.elmoznino/scratch/prequential_icl/data/hmm/train.pt"
+  supervised: True
+  supervised_one_hot_y: True
+val_dataset:
+  _target_: datasets.symbolic.HMM
+  data_path: "/home/mila/e/eric.elmoznino/scratch/prequential_icl/data/hmm/val.pt"
+  supervised: ${dataset.train_dataset.supervised}
+  supervised_one_hot_y: ${dataset.train_dataset.supervised_one_hot_y}

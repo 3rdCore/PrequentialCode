@@ -23,7 +23,7 @@ class PositionalEncoding(nn.Module):
     def forward(self, x: FloatTensor) -> FloatTensor:
         """
         Arguments:
-            x: FloatTensor, shape ``(batch_size, seq_len, embedding_dim)``
+            x: FloatTensor, shape ``(seq_len, batch_size, embedding_dim)``
         """
         x = x + self.pe[: x.shape[0]]
         return x

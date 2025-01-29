@@ -8,7 +8,7 @@ from torch.nn import functional as F
 
 from datasets.interfaces import TaskDistDataset
 from datasets.synthetic import SyntheticDataset
-from utils import bincount_batched
+from utils import PositionalEncoding, bincount_batched
 
 
 class SyntheticSymbolicDataset(SyntheticDataset):
@@ -124,9 +124,7 @@ class Mastermind(SyntheticSymbolicDataset):
         return x
 
     def sample_task_params(self, n_tasks: int | None = None) -> dict[str, Tensor]:
-        code = torch.randint(
-            low=0, high=self.num_colours - 1, size=(n_tasks, self.code_length)
-        )
+        code = torch.randint(low=0, high=self.num_colours - 1, size=(n_tasks, self.code_length))
         return {"code": code}
 
     def function(self, x: LongTensor, params: dict[str, Tensor]) -> LongTensor:
@@ -145,12 +143,19 @@ class HMM(TaskDistDataset):
     def __init__(
         self,
         data_path: str,
+        supervised: bool = False,
+        supervised_one_hot_y: bool = True,
+        supervised_pe_dim: int = 256,
     ):
         super().__init__()
         self.data = torch.load(data_path, map_location="cpu")
         self.n_tasks = self.data.shape[0]
-        self.n_samples = self.data.shape[1] - 1
+        self.n_samples = self.data.shape[1]
         self.n_vals = (self.data.max() + 1).item()
+        self.supervised = supervised
+        self.supervised_one_hot_y = supervised_one_hot_y
+        if supervised:
+            self.pe = PositionalEncoding(d_model=supervised_pe_dim).pe
 
     @beartype
     def __len__(self) -> int:
@@ -158,8 +163,14 @@ class HMM(TaskDistDataset):
 
     @beartype
     def __getitem__(self, index: int) -> tuple[dict[str, Tensor], None]:
-        x, y = self.data[index, :-1], self.data[index, 1:]
-        return {
-            "x": F.one_hot(x.long(), self.n_vals).float(),
-            "y": F.one_hot(y.long(), self.n_vals).float(),
-        }, None
+        if self.supervised:
+            x = self.pe[: self.n_samples, 0]
+            y = self.data[index].long()
+            if self.supervised_one_hot_y:
+                y = F.one_hot(y, self.n_vals).float()
+        else:
+            x, y = self.data[index, :-1], self.data[index, 1:]
+            return {
+                "x": F.one_hot(x.long(), self.n_vals).float(),
+                "y": F.one_hot(y.long(), self.n_vals).float(),
+            }, None
