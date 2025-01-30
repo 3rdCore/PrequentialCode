@@ -260,6 +260,43 @@ class MLP(nn.Module):
             layer.bias.data = self.initial_biases[i].clone().detach().to(layer.bias.device)
 
 
+class RNN(nn.Module):
+    def __init__(
+        self,
+        in_features,
+        out_features,
+        h_dim=None,
+        n_layers=1,
+        dropout_rate=0.0,
+        bidirectional=False,
+        device=None,
+        dtype=None,
+    ):
+        super().__init__()
+        factory_kwargs = {"device": device, "dtype": dtype}
+        h_dim = h_dim if h_dim is not None else in_features
+        self.rnn = nn.RNN(
+            in_features,
+            h_dim,
+            n_layers,
+            dropout=dropout_rate,
+            bidirectional=bidirectional,
+            batch_first=True,
+            **factory_kwargs,
+        )
+        self.fc = nn.Linear(h_dim * (2 if bidirectional else 1), out_features, **factory_kwargs)
+        self.initial_params = {n: v.clone().detach() for n, v in self.named_parameters()}
+
+    def forward(self, x):
+        x, _ = self.rnn(x)
+        x = self.fc(x)
+        return x
+
+    def weight_init(self):
+        for n, p in self.named_parameters():
+            p.data = self.initial_params[n].clone().detach().to(p.device)
+
+
 class GatedMLP(nn.Module):
     def __init__(
         self,
