@@ -1,0 +1,5 @@
+_target_: models.utils.RNN
+in_features: 50
+out_features: 50
+h_dim: 64
+n_layers: 3
