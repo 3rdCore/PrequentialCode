@@ -18,7 +18,7 @@ def train(cfg):
     callbacks = [hydra.utils.instantiate(cfg.callbacks)] if cfg.callbacks else None
 
     if logger:
-        logger.experiment.config.update(OmegaConf.to_container(cfg, resolve=True))
+        logger.experiment.config.update(OmegaConf.to_container(cfg, resolve=False))
         logger.experiment.config.update({"seed": cfg.seed})
 
     trainer = Trainer(
