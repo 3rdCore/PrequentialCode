@@ -124,9 +124,7 @@ class Mastermind(SyntheticSymbolicDataset):
         return x
 
     def sample_task_params(self, n_tasks: int | None = None) -> dict[str, Tensor]:
-        code = torch.randint(
-            low=0, high=self.num_colours - 1, size=(n_tasks, self.code_length)
-        )
+        code = torch.randint(low=0, high=self.num_colours - 1, size=(n_tasks, self.code_length))
         return {"code": code}
 
     def function(self, x: LongTensor, params: dict[str, Tensor]) -> LongTensor:
@@ -139,7 +137,7 @@ class Mastermind(SyntheticSymbolicDataset):
         return torch.stack([full_correct, colour_correct], dim=-1)
 
 
-class HMM(TaskDistDataset):
+class HMM(SyntheticDataset):
     # TODO: Make this a SyntheticSymbolicDataset and implement the data-generation
     @beartype
     def __init__(
@@ -150,25 +148,55 @@ class HMM(TaskDistDataset):
         supervised_pe_dim: int = 256,
         max_tasks: int | None = None,
     ):
-        super().__init__()
-        self.data = torch.load(data_path, map_location="cpu")
-        if max_tasks is not None:
-            self.data = self.data[:max_tasks]
-        self.n_tasks = self.data.shape[0]
-        self.n_samples = self.data.shape[1]
-        self.n_vals = (self.data.max() + 1).item()
+        self.data_path = data_path
         self.supervised = supervised
         self.supervised_one_hot_y = supervised_one_hot_y
-        if supervised:
-            pe = PositionalEncoding(d_model=supervised_pe_dim).pe
-            x = pe[: self.n_samples, 0].unsqueeze(0).expand(self.n_tasks, -1, -1)
-            y = self.data.long()
-            self.data = {"x": x, "y": y}
+        self.supervised_pe_dim = supervised_pe_dim
+        self.max_tasks = max_tasks
+
+        self.raw_data = torch.load(self.data_path, map_location="cpu")
+        if self.max_tasks is not None:
+            self.raw_data = self.raw_data[: self.max_tasks]
+        n_tasks = self.raw_data.shape[0]
+        n_samples = self.raw_data.shape[1]
+
+        super().__init__(n_tasks=n_tasks, n_samples=n_samples, shuffle_samples=False)
 
     @beartype
     def __len__(self) -> int:
         return len(self.data)
 
+    @beartype
+    def gen_data(
+        self,
+        n_tasks: int,
+        n_samples: int,
+    ) -> tuple[dict[str, FloatTensor], dict[str, Iterable]]:
+
+        self.data = torch.load(self.data_path, map_location="cpu")
+        if self.max_tasks is not None:
+            self.data = self.data[: self.max_tasks]
+        self.n_tasks = self.data.shape[0]
+        self.n_samples = self.data.shape[1]
+        self.n_vals = (self.data.max() + 1).item()
+        self.supervised = self.supervised
+        self.supervised_one_hot_y = self.supervised_one_hot_y
+        if self.supervised:
+            pe = PositionalEncoding(d_model=self.supervised_pe_dim).pe
+            x = pe[: self.n_samples, 0].unsqueeze(0).expand(self.n_tasks, -1, -1)
+            y = self.data.long()
+            self.data = {"x": x, "y": y}
+        else:
+            x = self.data[:, :-1]
+            y = self.data[:, 1:]  # predict the next token
+            self.data = {
+                "x": F.one_hot(x.long(), self.n_vals).float(),
+                "y": F.one_hot(y.long(), self.n_vals).float(),
+            }
+        return self.data, {}
+
+
+"""
     def __getitem__(self, index: int) -> tuple[dict[str, Tensor], None]:
         if self.supervised:
             x = self.data["x"][index]
@@ -182,3 +210,4 @@ class HMM(TaskDistDataset):
                 "x": F.one_hot(x.long(), self.n_vals).float(),
                 "y": F.one_hot(y.long(), self.n_vals).float(),
             }, None
+"""

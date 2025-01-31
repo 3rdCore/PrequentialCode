@@ -2,7 +2,13 @@ name: "hmm"
 
 train_dataset:
   _target_: datasets.symbolic.HMM
-  data_path: "/home/mila/e/eric.elmoznino/scratch/prequential_icl/data/hmm/train.pt"
+  data_path: "/home/mila/t/tom.marty/PrequentialCode/data/hmm/train.pt"
+  supervised: False
+  supervised_one_hot_y: false
+  max_tasks: 50000 #can't parse too much task or GPU ram overload
 val_dataset:
   _target_: datasets.symbolic.HMM
-  data_path: "/home/mila/e/eric.elmoznino/scratch/prequential_icl/data/hmm/val.pt"
+  data_path: "/home/mila/t/tom.marty/PrequentialCode/data/hmm/val.pt"
+  supervised: ${dataset.train_dataset.supervised}
+  supervised_one_hot_y: ${dataset.train_dataset.supervised_one_hot_y}
+  max_tasks: ${dataset.train_dataset.max_tasks}
