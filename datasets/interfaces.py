@@ -60,6 +60,9 @@ class AtomicICLDataModule(LightningDataModule):
         val_prop: float = 0.2,
         num_workers: int = 0,
         current_task: int = 0,
+        shuffle: bool = True,
+        copy_test: bool = True,
+        is_sequence: bool = False,
     ):
         super().__init__()
         self.save_hyperparameters(ignore=["dataset"])
@@ -68,10 +71,13 @@ class AtomicICLDataModule(LightningDataModule):
         self.dataset = dataset
         self.max_train_samples = max_train_samples
         self.val_prop = val_prop
-        self.train_dataset, self.val_dataset, self.test_dataset = (
-            shuffle_train_val_test_split(
-                dataset, n_samples=max_train_samples, val_prop=self.hparams.val_prop
-            )
+        self.train_dataset, self.val_dataset, self.test_dataset = shuffle_train_val_test_split(
+            dataset,
+            n_samples=max_train_samples,
+            val_prop=self.hparams.val_prop,
+            shuffle=shuffle,
+            copy_test=copy_test,
+            is_sequence=is_sequence,
         )
         self.switch_task(task=self.hparams.current_task)
 
@@ -84,11 +90,7 @@ class AtomicICLDataModule(LightningDataModule):
 
         # randomly select a task in multi_dataset self.multi_dataset.n_tasks
         def update_current_task(dataset):
-            dataset.current_task = (
-                (dataset.current_task + 1) % self.dataset.n_tasks
-                if task is None
-                else task
-            )
+            dataset.current_task = (dataset.current_task + 1) % self.dataset.n_tasks if task is None else task
             return dataset.current_task
 
         current_task = update_current_task(self.train_dataset)
@@ -100,6 +102,7 @@ class AtomicICLDataModule(LightningDataModule):
             val_size = n_samples - train_size
             self.train_dataset.n_samples = train_size
             self.val_dataset.n_samples = val_size
+            self.test_dataset.n_samples = train_size
 
     @beartype
     def train_dataloader(self) -> DataLoader:
@@ -107,7 +110,7 @@ class AtomicICLDataModule(LightningDataModule):
             self.train_dataset,
             batch_size=self.hparams.batch_size,
             num_workers=self.hparams.num_workers,
-            shuffle=True,
+            shuffle=False,
             collate_fn=None,
         )
 
@@ -138,18 +141,23 @@ class AtomicICLDataModule(LightningDataModule):
 
 
 @beartype
-def shuffle_train_val_test_split(dataset, n_samples, val_prop):
+def shuffle_train_val_test_split(dataset, n_samples, val_prop, shuffle, copy_test, is_sequence):
     train_size = int(n_samples * (1 - val_prop))
     data = dataset.data
     shuffle_idx = torch.randperm(data[list(data.keys())[0]].shape[1])
-    data = {name: data[name][:, shuffle_idx] for name in data}
+    if shuffle:
+        data = {name: data[name][:, shuffle_idx] for name in data}
     # create test data
-    test_data = {name: data[name][:, n_samples:] for name in data}
-    # create train and val data
     train_data = {name: data[name][:, :train_size] for name in data}
-    val_data = (
-        None if val_prop == 0 else {name: data[name][:, train_size:] for name in data}
-    )
+
+    if copy_test:
+        test_data = {name: data[name][:, 1 : train_size + 1] for name in data}
+        test_size = train_size
+    else:
+        test_data = {name: data[name][:, n_samples:] for name in data}
+        test_size = n_samples - train_size
+    # create train and val data
+    val_data = None if val_prop == 0 else {name: data[name][:, train_size:] for name in data}
 
     train_dataset, val_dataset, test_dataset = (
         copy.deepcopy(dataset),
@@ -164,12 +172,12 @@ def shuffle_train_val_test_split(dataset, n_samples, val_prop):
     train_dataset.n_samples, val_dataset.n_samples, test_dataset.n_samples = (
         train_size,
         n_samples - train_size,
-        dataset.n_samples - n_samples,
+        test_size,
     )
 
-    train_dataset = AtomicSyntheticDataset(train_dataset)
-    val_dataset = AtomicSyntheticDataset(val_dataset)
-    test_dataset = AtomicSyntheticDataset(test_dataset)
+    train_dataset = AtomicSyntheticDataset(train_dataset, is_sequence=is_sequence)
+    val_dataset = AtomicSyntheticDataset(val_dataset, is_sequence=is_sequence)
+    test_dataset = AtomicSyntheticDataset(test_dataset, is_sequence=is_sequence)
     return train_dataset, val_dataset, test_dataset
 
 

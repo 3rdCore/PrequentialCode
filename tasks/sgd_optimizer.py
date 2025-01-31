@@ -53,7 +53,7 @@ class StandardOptimizer(LightningModule):
 
         loss = self.loss_fn(preds, y)
         self.log(
-            "train_loss", loss, prog_bar=False, on_step=False, on_epoch=True
+            "train_loss", loss, prog_bar=True, on_step=False, on_epoch=True
         )  # exclude regularizer when logging
         reg = 0.0
         if hasattr(self.hparams, "regularization_type"):
@@ -138,8 +138,8 @@ class StandardOptimizer(LightningModule):
                     data[self.hparams.y_key].to(self.device),
                 )
                 preds = self.forward(x)
-                l = self.loss_fn(preds, y)
-                loss += l.item() * x.size(0)
+                l = self.loss_fn(preds, y, reduce="none")
+                loss += l[:, -1].item() * x.size(0)
                 total_samples += x.size(0)
                 if self.has_ood:
                     x_ood, y_ood = data["x_ood"].to(self.device), data[f"{self.hparams.y_key}_ood"].to(
@@ -215,7 +215,7 @@ class CustomEarlyStopping(Callback):
         self.stopped_epoch = 0
 
     @beartype
-    def on_validation_end(self, trainer: Trainer, pl_module: LightningModule) -> None:
+    def on_train_epoch_end(self, trainer: Trainer, pl_module: LightningModule) -> None:
         """Call EarlyStop Callback and check if the predictor should stop training at the end of the validation loop.
         Args:
             trainer: the lightning trainer

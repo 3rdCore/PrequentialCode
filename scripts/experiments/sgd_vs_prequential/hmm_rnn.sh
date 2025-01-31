@@ -17,8 +17,10 @@ python train.py --multirun hydra/launcher=mila_tom save_dir=/home/mila/t/tom.mar
     ++callbacks.monitor=train_loss \
     ++callbacks.min_delta=-1e-4 \
     ++callbacks.patience=50 \
-    ++trainer.gradient_clip_val=0.05
-
+    ++trainer.gradient_clip_val=0.05 \
+    ++datamodule.shuffle=false \
+    ++datamodule.copy_test=true \
+    ++datamodule.is_sequence=true \
 
     python train.py --multirun hydra/launcher=mila_eric save_dir=/home/mila/e/eric.elmoznino/scratch/prequential_icl/logs \
     seed=0,1,2,3,4,5,6,7,8,9,10,11,12,13,14  \
