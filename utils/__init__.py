@@ -61,3 +61,14 @@ class CrossEntropyLossFlat(nn.CrossEntropyLoss):
         if self.reduction == "none":
             loss = loss.view_as(target)
         return loss
+
+
+class CrossEntropyLossForSeq(nn.CrossEntropyLoss):
+    def forward(self, input, target, reduce="mean"):
+        input = input.transpose(1, 2)
+        target = target.transpose(1, 2)
+        loss = super().forward(input, target)
+        if reduce == "mean":
+            return loss.mean()
+        else:
+            return loss
