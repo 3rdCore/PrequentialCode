@@ -215,12 +215,8 @@ class DecoderTransformer2(ImplicitModel):
         xy0 = self.xy0_embedding.expand(1, seq_xy.shape[1], -1)
         seq_xy = torch.cat([xy0, seq_xy[:-1]], dim=0)
         # Encode the sequence
-        causal_mask = torch.nn.Transformer.generate_square_subsequent_mask(
-            seq_x.shape[0]
-        ).to(seq_x.device)
-        seq = self.decoder.forward(
-            seq_x, seq_xy, memory_mask=causal_mask, memory_is_causal=True
-        )
+        causal_mask = torch.nn.Transformer.generate_square_subsequent_mask(seq_x.shape[0]).to(seq_x.device)
+        seq = self.decoder.forward(seq_x, seq_xy, memory_mask=causal_mask, memory_is_causal=True)
 
         # Readout
         y = self.readout(seq)
@@ -287,12 +283,8 @@ class DecoderTransformer3(ImplicitModel):
         xy0 = self.xy0_embedding.expand(1, seq_xy.shape[1], -1)
         seq_xy = torch.cat([xy0, seq_xy[:-1]], dim=0)
         # Encode the sequence
-        causal_mask = torch.nn.Transformer.generate_square_subsequent_mask(
-            seq_x.shape[0]
-        ).to(seq_x.device)
-        seq = self.decoder.forward(
-            seq_x, seq_xy, memory_mask=causal_mask, memory_is_causal=True
-        )
+        causal_mask = torch.nn.Transformer.generate_square_subsequent_mask(seq_x.shape[0]).to(seq_x.device)
+        seq = self.decoder.forward(seq_x, seq_xy, memory_mask=causal_mask, memory_is_causal=True)
 
         # Readout
         y = self.readout(seq)
@@ -359,16 +351,71 @@ class DecoderTransformer4(ImplicitModel):
         xy0 = self.xy0_embedding.expand(1, seq_xy.shape[1], -1)
         seq_xy = torch.cat([xy0, seq_xy[:-1]], dim=0)
         # Encode the sequence
-        causal_mask = torch.nn.Transformer.generate_square_subsequent_mask(
-            seq_x.shape[0]
-        ).to(seq_x.device)
-        seq = self.decoder.forward(
-            seq_x, seq_xy, memory_mask=causal_mask, memory_is_causal=True
-        )
+        causal_mask = torch.nn.Transformer.generate_square_subsequent_mask(seq_x.shape[0]).to(seq_x.device)
+        seq = self.decoder.forward(seq_x, seq_xy, memory_mask=causal_mask, memory_is_causal=True)
 
         # Readout
         y = self.readout(seq)
         y = y.split(self.y_dim, dim=-1)
         y = {name: y[i] for i, name in enumerate(self.y_keys)}
+
+        return y
+
+
+class WeightPredictionTransformer(ImplicitModel):
+    @beartype
+    def __init__(
+        self,
+        x_dim: int,  # number of total features in the input
+        y_dim: int,  # number of features in the output
+        h_dim: int,
+        n_layers: int,
+        n_heads: int,
+        x_keys: tuple[str] = ("x"),
+        y_keys: tuple[str] = ("y"),
+        mlp_dim: int | None = None,
+        layer_norm_eps: float = 1e-5,
+        dropout: float = 0.0,
+    ) -> None:
+        super().__init__()
+
+        self.x_dim = x_dim
+        self.y_dim = y_dim
+        self.x_keys = x_keys
+        self.y_keys = y_keys
+
+        self.x_embedding = nn.Linear(x_dim, h_dim)
+
+        self.decoder = CustomDecoder(
+            CustomDecoderLayer2(
+                d_model=h_dim,
+                nhead=n_heads,
+                dim_feedforward=mlp_dim if mlp_dim is not None else 2 * h_dim,
+                dropout=dropout,
+                layer_norm_eps=layer_norm_eps,
+            ),
+            num_layers=n_layers,
+        )
+        self.readout = nn.Linear(h_dim, y_dim)
+        self.init_weights()
+
+    @beartype
+    def init_weights(self) -> None:
+        for p in self.decoder.parameters():
+            if p.dim() > 1:  # skip biases
+                nn.init.xavier_uniform_(p)
+
+    @beartype
+    def forward(self, x: dict[str, Tensor]) -> dict[str, Tensor]:
+        # Construct input tensor
+        x = torch.cat([x[name] for name in self.x_keys], dim=-1)
+        seq_x = self.x_embedding(x)
+        # Encode the sequence
+        causal_mask = torch.nn.Transformer.generate_square_subsequent_mask(seq_x.shape[0]).to(seq_x.device)
+        seq = self.decoder.forward(seq_x, seq_x, memory_mask=causal_mask, memory_is_causal=True)
+
+        # Readout
+        y = self.readout(seq)
+        y = {"y": y}
 
         return y
