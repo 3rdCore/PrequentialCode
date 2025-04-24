@@ -225,8 +225,9 @@ class MetaOptimizerExplicitForRegression(MetaOptimizerExplicit):
         self.logger.log_table(f"tables/{mode}-model_vs_true-model", data=df_model)
 
         # Make the plots
-        fig, axs = plt.subplots(1, n_probe_tasks, figsize=(5 * n_probe_tasks, 5))
-        for task_idx, ax in enumerate(axs):
+        fig, axs = plt.subplots(2, n_probe_tasks // 2, figsize=(5 * n_probe_tasks // 2, 10))
+        unique_hue_values = df_context["n_context_group"].nunique()
+        for task_idx, ax in enumerate(axs.flat):  # Ensure axs is flattened for 2D subplots
             sns.lineplot(
                 data=df_true[df_true["task_id"] == task_idx],
                 x="x",
@@ -234,26 +235,28 @@ class MetaOptimizerExplicitForRegression(MetaOptimizerExplicit):
                 color="grey",
                 ax=ax,
             )
-            sns.lineplot(
+            line = sns.lineplot(
                 data=df_model[df_model["task_id"] == task_idx],
                 x="x",
                 y="y",
-                hue="n_context_group",
-                palette=sns.color_palette("crest", as_cmap=True),
+                hue="n_context",
+                palette=sns.color_palette("tab10", n_colors=unique_hue_values),
                 ax=ax,
             )
-            sns.scatterplot(
+            scatter = sns.scatterplot(
                 data=df_context[df_context["task_id"] == task_idx],
                 x="x",
                 y="y",
                 hue="n_context_group",
-                palette=sns.color_palette("crest", as_cmap=True),
+                palette=sns.color_palette("tab10", n_colors=unique_hue_values),
                 linewidth=1.2,
                 marker="+",
                 s=100,
                 ax=ax,
+                legend=False,
             )
-            ax.legend().remove()
+            line_handles, line_labels = line.get_legend_handles_labels()
+            ax.legend(line_handles, line_labels, title="n_context")
         self.logger.log_image(key=f"probes/{mode}-model_vs_true", images=[fig2img(fig)])
 
 
