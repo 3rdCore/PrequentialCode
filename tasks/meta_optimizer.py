@@ -5,6 +5,7 @@ from typing import Iterable, Literal
 import torch
 from beartype import beartype
 from lightning import LightningModule
+from lightning.pytorch.callbacks import Callback
 from torch import Tensor
 
 from models.context_aggregator import ContextAggregator
@@ -254,8 +255,18 @@ class MetaOptimizerExplicit(ABC, LightningModule):
         loss_train = self.loss_function(x_train, preds_train).mean()
         loss_nexttoken = self.loss_function(x_nexttoken, preds_nexttoken).mean()
         loss = loss_train if self.meta_objective == "train" else loss_nexttoken
-        self.log(f"{mode}/loss_train", loss_train, batch_size=num_tasks)
-        self.log(f"{mode}/loss_nexttoken", loss_nexttoken, batch_size=num_tasks)
+        self.log(
+            f"{mode}/loss_train",
+            loss_train,
+            batch_size=num_tasks,
+            prog_bar=True,
+        )
+        self.log(
+            f"{mode}/loss_nexttoken",
+            loss_nexttoken,
+            batch_size=num_tasks,
+            prog_bar=True,
+        )
 
         return loss
 
@@ -281,6 +292,44 @@ class MetaOptimizerExplicit(ABC, LightningModule):
             hasattr(self.trainer.datamodule.train_dataset, "has_ood")
             and self.trainer.datamodule.train_dataset.has_ood
         )
+
+
+class EarlyStoppingMetaObjective(Callback):
+    def __init__(self, threshold: float = 0.0, patience: int = 3):
+        """
+        Args:
+            threshold (float): The maximum allowed increase in loss before stopping.
+            patience (int): Number of epochs to wait before stopping after the threshold is exceeded.
+        """
+        super().__init__()
+        self.threshold = threshold
+        self.patience = patience
+        self.wait_count = 0
+        self.best_loss = float("inf")
+
+    def on_validation_epoch_end(self, trainer, pl_module):
+        # Determine the metric to monitor based on the meta_objective
+        if pl_module.hparams.meta_objective == "train":
+            monitored_metric = "val_tasks/loss_train"
+        elif pl_module.hparams.meta_objective == "prequential":
+            monitored_metric = "val_tasks/loss_nexttoken"
+        else:
+            raise ValueError(f"Invalid meta_objective: {pl_module.hparams.meta_objective}")
+
+        # Get the current value of the monitored metric
+        current_loss = trainer.callback_metrics.get(monitored_metric)
+
+        if current_loss is None:
+            return  # Skip if the metric is not available
+
+        # Check if the loss has increased beyond the threshold
+        if current_loss > self.best_loss + self.threshold:
+            self.wait_count += 1
+            if self.wait_count >= self.patience:
+                trainer.should_stop = True
+        else:
+            self.best_loss = current_loss
+            self.wait_count = 0
 
 
 class MetaOptimizerImplicit(ABC, LightningModule):
