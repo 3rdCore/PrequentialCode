@@ -130,11 +130,7 @@ class MLPPredictor(Predictor):
         self.x_key = x_key
         self.z_key = z_key
         self.y_key = y_key
-        self.z_dim = (
-            (x_dim + 1) * h_dim
-            + (n_layers - 2) * (h_dim + 1) * h_dim
-            + (h_dim + 1) * y_dim
-        )
+        self.z_dim = (x_dim + 1) * h_dim + (n_layers - 2) * (h_dim + 1) * h_dim + (h_dim + 1) * y_dim
 
         self.n_layers = n_layers
         self.h_dim = h_dim
@@ -178,9 +174,7 @@ class MLPPredictor(Predictor):
         ]
 
         w_last_size = self.h_dim * self.y_dim
-        w_last = z[..., -(w_last_size + self.y_dim) : -self.y_dim].view(
-            *z.shape[:-1], self.h_dim, self.y_dim
-        )
+        w_last = z[..., -(w_last_size + self.y_dim) : -self.y_dim].view(*z.shape[:-1], self.h_dim, self.y_dim)
         b_last = z[..., -self.y_dim :].view(*z.shape[:-1], self.y_dim)
 
         y = F.relu(torch.einsum("sbi,sbij->sbj", x, w0) + b0)
@@ -226,9 +220,7 @@ class MLPLowRankPredictor(Predictor):
         for _ in range(n_layers - 2):
             param_shapes += [(h_dim, h_dim), (h_dim,)]
         param_shapes += [(y_dim, h_dim), (y_dim,)]
-        self.ff_upsample = nn.ModuleList(
-            [FastFoodUpsample(z_dim, ps) for ps in param_shapes]
-        )
+        self.ff_upsample = nn.ModuleList([FastFoodUpsample(z_dim, ps) for ps in param_shapes])
 
     @beartype
     def to(self, device):
@@ -308,4 +300,51 @@ class FourierPredictor(Predictor):
         x_cos = torch.cos(x.unsqueeze(-1) * self.freqs.unsqueeze(0))
         x = torch.cat([x_sin, x_cos], dim=-1)
         y = (x * amplitudes).sum(dim=-1).sum(dim=-1, keepdim=True)
+
+
+class TchebyshevPredictor(Predictor):
+    @beartype
+    def __init__(self, degree: int, x_key: str = "x", z_key: str = "z", y_key: str = "y") -> None:
+        """
+        Initialize the TchebyshevPredictor.
+
+        Args:
+            degree (int): Degree of the Tchebyshev polynomial.
+            x_key (str): Key for the input tensor x in the input dictionary.
+            z_key (str): Key for the latent tensor z in the input dictionary.
+            y_key (str): Key for the output tensor y in the output dictionary.
+        """
+        super().__init__()
+        self.degree = degree
+        self.x_key = x_key
+        self.z_key = z_key
+        self.y_key = y_key
+
+    @beartype
+    def forward(self, x: dict[str, Tensor], z: dict[str, Tensor]) -> dict[str, Tensor]:
+        """
+        Perform a forward pass to predict y using Tchebyshev polynomials.
+
+        Args:
+            x (dict[str, Tensor]): Input data, with shape (samples, tasks, 1) at `x_key`.
+            z (dict[str, Tensor]): Latent weights, with shape (samples, tasks, degree + 1) at `z_key`.
+
+        Returns:
+            dict[str, Tensor]: Predicted values for y output, with shape (samples, tasks, 1) at `y_key`.
+        """
+        x = x[self.x_key]  # (samples, tasks, 1)
+        z = z[self.z_key]  # (samples, tasks, degree + 1)
+
+        # Prepare Tchebyshev polynomials
+        tchebyshev_basis = [torch.ones_like(x), x]  # T_0(x) = 1, T_1(x) = x
+        for i in range(2, self.degree + 1):
+            t_next = 2 * x * tchebyshev_basis[-1] - tchebyshev_basis[-2]  # T_n(x) = 2xT_{n-1}(x) - T_{n-2}(x)
+            tchebyshev_basis.append(t_next)
+
+        # Stack the basis to shape (samples, tasks, degree + 1)
+        tchebyshev_basis = torch.cat(tchebyshev_basis, dim=-1)
+
+        # Compute the weighted sum of Tchebyshev polynomials
+        y = torch.sum(tchebyshev_basis * z, dim=-1, keepdim=True)  # (samples, tasks, 1)
+
         return {self.y_key: y}
