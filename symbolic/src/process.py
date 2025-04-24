@@ -3,7 +3,7 @@ from abc import abstractmethod
 
 import numpy as np
 from dataset import Datasets
-from templates import MastermindTemplate
+from templates import MastermindTemplate, ShiftCipherTemplate
 
 from utils import compute_marginal_baseline, compute_random_baseline, cross_entropy_loss, softmax
 
@@ -65,7 +65,40 @@ class PCFGParser(Parser):
         pass
 
 
-ParserMap = {Datasets.MASTERMIND: MastermindParser, Datasets.ARC: ArcParser, Datasets.PCFG: PCFGParser}
+class ShiftCipherParser(Parser):
+    def __init__(self, dataset_type: Datasets):
+        super().__init__(Datasets.SHIFT_CIPHER)
+        self.template = ShiftCipherTemplate()
+
+    def parse(self, response) -> tuple[str, bool, str]:
+        try:
+            response = response.content.lower()
+            answers = self.extract_answer(response)
+            if len(answers) != 2:
+                return None, False, self.template.ERROR_MESSAGE
+            return answers, True, None
+        except Exception as err:
+            return response, False, self.template.ERROR_MESSAGE
+
+    def extract_answer(self, response):
+        matches = re.findall(self.template.PATTERN, response)
+        return matches
+
+    def process(self, answer, logprobs):
+        answer = [int(a) for a in answer]
+        logprobs_arr = []
+        for logprob in logprobs:
+            d_value = min(logprob.values())
+            logprobs_arr.append([logprob.get(v, d_value) for v in self.template.VALUES])
+        return answer, logprobs_arr
+
+
+ParserMap = {
+    Datasets.MASTERMIND: MastermindParser,
+    Datasets.ARC: ArcParser,
+    Datasets.PCFG: PCFGParser,
+    Datasets.SHIFT_CIPHER: ShiftCipherParser,
+}
 
 
 def get_parser(dataset_type: str) -> Parser:

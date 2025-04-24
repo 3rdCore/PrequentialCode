@@ -1,8 +1,9 @@
 from abc import ABC, abstractmethod
 
 import pandas as pd
-from dataset import Dataset, Datasets
-from templates import ArcTemplate, MastermindTemplate, PCFGTemplate
+
+from .dataset import Dataset, Datasets
+from .templates import ArcTemplate, MastermindTemplate, PCFGTemplate, ShiftCipherTemplate
 
 
 class PromptGenerator(ABC):
@@ -71,10 +72,35 @@ class PCFGGenerator(PromptGenerator):
         pass
 
 
+class ShiftCipherGenerator(PromptGenerator):
+    def __init__(self, with_option=False) -> None:
+        super().__init__(with_option)
+        self.template = ShiftCipherTemplate(True, with_option)
+
+    def generate(self, data) -> tuple[str, list[pd.DataFrame]]:
+        system = self.template.SYSTEM
+        task_prompts = []
+        for x_samples, y_samples in data:
+            contexts = []
+            queries = []
+            for s, (x, y) in enumerate(zip(x_samples, y_samples)):
+                context, query = self.generate_prompt(s, x, y)
+                contexts.append(context)
+                queries.append(query)
+            task_prompts.append(pd.DataFrame({"context": contexts[:-1], "query": queries[1:]}))
+        return system, task_prompts
+
+    def generate_prompt(self, i: int, x, y) -> tuple[str, str]:
+        context = self.template.CONTEXT.format(input=x, output=y)
+        prompt = self.template.QUERY.format(input=x, output=y)
+        return context, prompt
+
+
 GeneratorMap = {
     Datasets.MASTERMIND: MastermindGenerator,
     Datasets.ARC: ArcGenerator,
     Datasets.PCFG: PCFGGenerator,
+    Datasets.SHIFT_CIPHER: ShiftCipherGenerator,
 }
 
 

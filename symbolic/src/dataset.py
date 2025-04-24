@@ -1,17 +1,20 @@
+import random
 from abc import abstractmethod
 from enum import Enum
+from typing import Generator
 
 import numpy as np
 import torch
 from torch import LongTensor, Tensor
 
-from utils import batched_bincount
+from .utils import batched_bincount, sample_words
 
 
 class Datasets(Enum):
     MASTERMIND = "mastermind"
     ARC = "arc"
     PCFG = "pcfg"
+    SHIFT_CIPHER = "shift_cipher"
 
     @classmethod
     def list(cls):
@@ -25,7 +28,7 @@ class Dataset:
         self.dataset_type = dataset_type
 
     @abstractmethod
-    def sample(self, seed: int | None = None) -> tuple[np.ndarray, np.ndarray]:
+    def sample(self, seed: int | None = None):
         pass
 
 
@@ -70,7 +73,62 @@ class PCFG(Dataset):
         pass
 
 
-DatasetMap = {Datasets.MASTERMIND: Mastermind, Datasets.ARC: Arc, Datasets.PCFG: PCFG}
+class ShiftCipher(Dataset):
+    def __init__(self, n_tasks: int, n_samples: int, encode: bool = True, corpus_name: str = "wordnet"):
+        self.encode = encode
+        self.corpus_name = corpus_name
+        super().__init__(n_tasks, n_samples, Datasets.SHIFT_CIPHER)
+
+    def sample(self, seed: int = 0) -> Generator[tuple[np.ndarray, np.ndarray], None, None]:
+        torch.manual_seed(seed)
+        self.shift = torch.randint(0, 26, size=(self.n_tasks,))
+        # self.start = torch.randint(0, 10, self.n_tasks)
+        self.start = torch.zeros(self.n_tasks)
+        # self.step = torch.randint(1, 10, self.n_tasks)
+        self.step = torch.ones(self.n_tasks)
+        random.seed(seed)
+        word_sampler = sample_words(self.n_tasks, self.n_samples, self.corpus_name)
+        for i in range(self.n_tasks):
+            x = []
+            y = []
+            sampled_words = next(word_sampler)
+            for _, word in enumerate(sampled_words):
+                encoded_word = self.__shift_chipher(word, self.shift[i], self.start[i], self.step[i])
+                if self.encode:
+                    x.append(word)
+                    y.append(encoded_word)
+                else:
+                    x.append(encoded_word)
+                    y.append(word)
+            yield x, y
+        return
+
+    def __shift_chipher(self, word: str, shift: int = 0, start: int = 0, step: int = 1) -> str:
+        """
+        Shift the letters in the word by the given shift value, starting from the given index and stepping by the given step value.
+        """
+
+        def shift_char(c, shift):
+            if "A" <= c <= "Z":
+                return chr((ord(c) - ord("A") + shift) % 26 + ord("A"))
+            elif "a" <= c <= "z":
+                return chr((ord(c) - ord("a") + shift) % 26 + ord("a"))
+            return c  # Non-letter characters unchanged
+
+        result = []
+        for idx, c in enumerate(word):
+            if idx >= start and (idx - start) % step == 0 and c.isalpha():
+                c = shift_char(c, shift)
+            result.append(c)
+        return "".join(result)
+
+
+DatasetMap = {
+    Datasets.MASTERMIND: Mastermind,
+    Datasets.ARC: Arc,
+    Datasets.PCFG: PCFG,
+    Datasets.SHIFT_CIPHER: ShiftCipher,
+}
 
 
 def get_dataset(dataset_type: str, n_tasks, n_samples, **kwargs) -> Dataset:

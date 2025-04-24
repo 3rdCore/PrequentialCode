@@ -1,11 +1,17 @@
 import argparse
 import json
 import os
+import random
 import re
+import subprocess
+import sys
+from typing import Generator, List
 
+import nltk
 import numpy as np
 import pandas as pd
 import torch
+from nltk.corpus import wordnet
 
 
 def batched_bincount(x: torch.LongTensor, max_val: int) -> torch.LongTensor:
@@ -131,3 +137,32 @@ def extract_html_tags(text, keys):
         if matches:
             content_dict[key] = [match.strip() for match in matches]
     return content_dict
+
+
+def ensure_nltk_corpus(corpus_name):
+    try:
+        import nltk
+    except ImportError:
+        subprocess.check_call([sys.executable, "-m", "pip", "install", "nltk"])
+        import nltk
+
+    try:
+        nltk.data.find(corpus_name)
+    except LookupError:
+        nltk.download(corpus_name)
+
+
+def sample_words(n_tasks, n_samples, corpus_name) -> Generator[List[str], None, None]:
+    # ensure_nltk_corpus(corpus_name)
+    def get_words(synsets):
+        words = []
+        for synset in synsets:
+            for lemma in synset.lemmas():
+                words.append(lemma.name())
+        return words
+
+    words = list(wordnet.all_synsets())
+    for i in range(n_tasks):
+        sampled_words = get_words(random.sample(words, n_samples))
+        yield sampled_words
+    return
