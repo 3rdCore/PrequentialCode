@@ -13,7 +13,7 @@ from datasets.interfaces import custom_collate_fn
 from datasets.regression import RegressionDataset
 from models.context_aggregator import ContextAggregator
 from models.implicit import ImplicitModel
-from models.predictor import Predictor, FourierPredictor
+from models.predictor import FourierPredictor, Predictor
 from tasks.meta_optimizer import MetaOptimizerExplicit, MetaOptimizerImplicit
 from utils.plotting import fig2img
 
@@ -44,9 +44,7 @@ class MetaOptimizerExplicitForRegression(MetaOptimizerExplicit):
 
         self.loss_fn = loss_fn
 
-    def loss_function(
-        self, target: dict[str, Tensor], preds: dict[str, Tensor]
-    ) -> Tensor:
+    def loss_function(self, target: dict[str, Tensor], preds: dict[str, Tensor]) -> Tensor:
         """
         Args:
             target (dict[str, Tensor]): Inputs/targets (samples, tasks, *).
@@ -57,9 +55,7 @@ class MetaOptimizerExplicitForRegression(MetaOptimizerExplicit):
         """
         assert len(preds) == 1, "Only one output key supported for regression tasks"
         y_key = list(preds.keys())[0]
-        return torch.mean(
-            self.loss_fn(preds[y_key], target[y_key]), dim=-1
-        )  # component-wise averaging
+        return torch.mean(self.loss_fn(preds[y_key], target[y_key]), dim=-1)  # component-wise averaging
 
     def losses_and_metrics(
         self,
@@ -82,9 +78,7 @@ class MetaOptimizerExplicitForRegression(MetaOptimizerExplicit):
         num_tasks = preds_train[list(preds_train.keys())[0]].shape[1]
 
         if self.has_ood:
-            x_ood = {
-                name: x_nexttoken[f"{name}_ood"].to(self.device) for name in ["x", "y"]
-            }
+            x_ood = {name: x_nexttoken[f"{name}_ood"].to(self.device) for name in ["x", "y"]}
             with torch.inference_mode():
                 preds_ood = self.predictor.forward(x_ood, z)
             ood_loss = self.loss_function(x_ood, preds_ood).mean()
@@ -165,9 +159,7 @@ class MetaOptimizerExplicitForRegression(MetaOptimizerExplicit):
         context = {name: context[name].to(self.device) for name in ["x", "y"]}
         z = self.context_aggregator.forward(context)
         n_context_points = [
-            n
-            for n in n_context_points
-            if n >= self.hparams.min_train_samples and n < z["z"].shape[0] - 1
+            n for n in n_context_points if n >= self.hparams.min_train_samples and n < z["z"].shape[0] - 1
         ]
         for name in z:
             z[name] = z[name][n_context_points]
@@ -182,9 +174,7 @@ class MetaOptimizerExplicitForRegression(MetaOptimizerExplicit):
         y = y.squeeze(-1).cpu().numpy()  # (n_probe_tasks, resolution)
         x_context = context["x"].squeeze(-1).cpu().numpy()  # (n_samples, n_probe_tasks)
         y_context = context["y"].squeeze(-1).cpu().numpy()  # (n_samples, n_probe_tasks)
-        y_pred = (
-            y_pred.cpu().numpy()
-        )  # (resolution, len(n_context_points), n_probe_tasks)
+        y_pred = y_pred.cpu().numpy()  # (resolution, len(n_context_points), n_probe_tasks)
 
         # Collect data in tables
         df_context = []
@@ -273,19 +263,15 @@ class MetaOptimizerExplicitForFourierRegression(MetaOptimizerExplicitForRegressi
 
     def on_train_end(self):
         super().on_train_end()
-        self.log_predicted_amplitudes(
-            mode="train_tasks", n_context_points=self.probe_n_context_points
-        )
-        self.log_predicted_amplitudes(
-            mode="val_tasks", n_context_points=self.probe_n_context_points
-        )
+        self.log_predicted_amplitudes(mode="train_tasks", n_context_points=self.probe_n_context_points)
+        self.log_predicted_amplitudes(mode="val_tasks", n_context_points=self.probe_n_context_points)
 
     @torch.inference_mode()
     def log_predicted_amplitudes(
         self,
         mode: Literal["train_tasks", "val_tasks"],
         n_context_points: tuple[int] | None = (1, 4, 10, 50),
-        n_probe_tasks: int = 100,
+        n_probe_tasks: int = 50,
     ) -> None:
         if (
             self.logger is None
@@ -327,9 +313,7 @@ class MetaOptimizerExplicitForFourierRegression(MetaOptimizerExplicitForRegressi
         context = {name: context[name].to(self.device) for name in ["x", "y"]}
         amplitudes = self.context_aggregator.forward(context)[predictor.z_key]
         n_context_points = [
-            n
-            for n in n_context_points
-            if n >= self.hparams.min_train_samples and n < amplitudes.shape[0] - 1
+            n for n in n_context_points if n >= self.hparams.min_train_samples and n < amplitudes.shape[0] - 1
         ]
         amplitudes = amplitudes[n_context_points]
         amplitudes = amplitudes.view(*amplitudes.shape[:-1], 2, predictor.n_freq)
@@ -344,12 +328,8 @@ class MetaOptimizerExplicitForFourierRegression(MetaOptimizerExplicitForRegressi
                             "task_id": task_idx,
                             "n_context": n_context_points[n_context_idx],
                             "frequency": predictor.freqs[freq_idx],
-                            "sin_amplitude": amplitudes[
-                                n_context_idx, task_idx, 0, freq_idx
-                            ],
-                            "cos_amplitude": amplitudes[
-                                n_context_idx, task_idx, 1, freq_idx
-                            ],
+                            "sin_amplitude": amplitudes[n_context_idx, task_idx, 0, freq_idx],
+                            "cos_amplitude": amplitudes[n_context_idx, task_idx, 1, freq_idx],
                         }
                     )
         df = pd.DataFrame(df)
@@ -370,9 +350,7 @@ class MetaOptimizerImplicitForRegression(MetaOptimizerImplicit):
 
         self.loss_fn = loss_fn
 
-    def loss_function(
-        self, target: dict[str, Tensor], preds: dict[str, Tensor]
-    ) -> Tensor:
+    def loss_function(self, target: dict[str, Tensor], preds: dict[str, Tensor]) -> Tensor:
         """
         Args:
             target (dict[str, Tensor]): Inputs/targets (samples, tasks, *).
@@ -383,6 +361,4 @@ class MetaOptimizerImplicitForRegression(MetaOptimizerImplicit):
         """
         assert len(preds) == 1, "Only one output key supported for regression tasks"
         y_key = list(preds.keys())[0]
-        return torch.mean(
-            self.loss_fn(preds[y_key], target[y_key]), dim=-1
-        )  # component-wise averaging
+        return torch.mean(self.loss_fn(preds[y_key], target[y_key]), dim=-1)  # component-wise averaging

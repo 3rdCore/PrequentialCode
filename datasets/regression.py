@@ -261,7 +261,7 @@ class FourierRegression(RegressionDataset):
         data_dist: str = "normal",
         shuffle_samples: bool = True,
         n_freq: int = 3,
-        coeff_decay: float = 0.25,
+        coeff_decay: float = 0.0,
     ):
         assert y_dim == 1  # only 1D output supported for now
         self.n_freq = n_freq

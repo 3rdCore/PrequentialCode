@@ -6,11 +6,11 @@ train_dataset:
   y_dim: 1
   n_tasks: 10000
   n_samples: 1000
-  noise: 0.0
+  noise: 0.1
   data_dist: "normal"
   shuffle_samples: True
   n_freq: 3
-  coeff_decay: 0.25
+  coeff_decay: 0.0
 
 val_dataset:
   _target_: datasets.regression.FourierRegression
