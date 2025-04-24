@@ -79,7 +79,7 @@ class RegressionDataset(SyntheticDataset):
 
         task_dict_params = self.sample_task_params(self.n_tasks)
         y = self.function(x, task_dict_params)
-        y += self.noise * torch.randn_like(y)
+        y += self.noise * y.std(dim=1, keepdim=True) * torch.randn_like(y)
         data_dict = {"x": x, "y": y}
 
         if self.has_ood:  # create ood data
@@ -477,6 +477,8 @@ class TchebyshevRegression(RegressionDataset):
         n_samples: int,
         noise: float = 0.0,
         degree: int = 5,
+        effective_degree: int = 5,
+        weight_distribution: str = "uniform",
         has_ood: bool = True,
         ood_style: str = "shift_scale",
         ood_shift: float | None = 2.0,
@@ -487,7 +489,8 @@ class TchebyshevRegression(RegressionDataset):
     ):
         assert y_dim == 1  # only 1D output supported for now
         self.degree = degree
-
+        self.effective_degree = effective_degree
+        self.weight_distribution = weight_distribution
         super().__init__(
             x_dim=x_dim,
             y_dim=y_dim,
@@ -507,7 +510,13 @@ class TchebyshevRegression(RegressionDataset):
     def sample_task_params(self, n_tasks: Optional[int] = None) -> Dict[str, Any]:
         # Chebyshev polynomial coefficients
         n_tasks = n_tasks if n_tasks is not None else self.n_tasks
-        coeffs = np.random.randn(n_tasks, self.x_dim, self.degree + 1, self.y_dim)
+        if self.weight_distribution == "normal":
+            coeffs = np.random.randn(n_tasks, self.x_dim, self.degree + 1, self.y_dim)
+        elif self.weight_distribution == "uniform":
+            coeffs = np.random.uniform(-1, 1, size=(n_tasks, self.x_dim, self.degree + 1, self.y_dim))
+
+        # set to zero all coeffs for higher degree monome above effective degree
+        coeffs[:, :, self.effective_degree + 1 :, :] = 0
 
         samples = np.random.choice(self.x_dim, self.x_dim - self.intrinsic_dim, replace=False)
         coeffs[:, samples, :, :] = 0
@@ -519,120 +528,20 @@ class TchebyshevRegression(RegressionDataset):
         return {"polynoms": polynoms}
 
     @beartype
-    def function(self, x: Tensor, task_params: Dict[str, Any]) -> Tensor:
+    def function(self, x: Tensor, task_params: dict[str, Any]) -> Tensor:
         polynoms = task_params["polynoms"]
         # x.shape = (n_tasks, n_samples, x_dim)
         # polynoms.shape = (n_tasks)
         y = torch.zeros(x.shape[0], x.shape[1], self.y_dim)
+        # add noise
         for i in range(x.shape[0]):
             y[i, :, :] += polynoms[i](x[i])
+
+        # mean = y.mean(dim=1, keepdim=True)
+        # std = y.std(dim=1, keepdim=True)
+        # y = (y - mean) / std
         mean = y.mean(dim=1, keepdim=True)
         std = y.std(dim=1, keepdim=True)
-        y = (y - mean) / std
+        # y = (y - mean) / std
 
         return y
-
-
-class TchebyshevWeightRegression(RegressionDataset):
-    @beartype
-    def __init__(
-        self,
-        x_dim: int,
-        y_dim: int,
-        n_tasks: int,
-        n_samples: int,
-        noise: float = 0.0,
-        degree: int = 5,
-        has_ood: bool = True,
-        ood_style: str = "shift_scale",
-        ood_shift: float | None = 2.0,
-        ood_scale: float | None = 3.0,
-        intrinsic_dim: int | None = None,
-        data_dist: str = "normal",
-        shuffle_samples: bool = True,
-    ):
-        self.degree = degree
-        x_dim = x_dim - 1
-        super().__init__(
-            x_dim=x_dim,
-            y_dim=y_dim,
-            n_tasks=n_tasks,
-            n_samples=n_samples,
-            noise=noise,
-            has_ood=has_ood,
-            ood_style=ood_style,
-            ood_shift=ood_shift,
-            ood_scale=ood_scale,
-            intrinsic_dim=intrinsic_dim,
-            data_dist=data_dist,
-            shuffle_samples=shuffle_samples,
-        )
-
-    @beartype
-    def sample_task_params(self, n_tasks: Optional[int] = None) -> Dict[str, Any]:
-        # Chebyshev polynomial coefficients
-        n_tasks = n_tasks if n_tasks is not None else self.n_tasks
-        coeffs = np.random.randn(n_tasks, self.x_dim, self.y_dim, 1)
-
-        samples = np.random.choice(self.x_dim, self.x_dim - self.intrinsic_dim, replace=False)
-        coeffs[:, samples, :, :] = 0
-
-        flat_coeffs = coeffs.reshape(-1, self.y_dim)
-
-        # Create Chebyshev objects for each coefficient vector
-        polynoms = np.array([Chebyshev(c, domain=[-1, 1]) for c in flat_coeffs], dtype=object)
-        return {"polynoms": polynoms}
-
-    @beartype
-    @torch.inference_mode()
-    def gen_data(
-        self,
-        n_tasks: int,
-        n_samples: int,
-    ) -> tuple[dict[str, Tensor], dict[str, Iterable]]:
-        x = self.sample_x(n_tasks, n_samples)
-
-        task_dict_params = self.sample_task_params(self.n_tasks)
-        y = self.function(x, task_dict_params)
-        y += self.noise * torch.randn_like(y)
-
-        x = torch.cat([x, y], dim=-1)
-        coefs = torch.stack(
-            [torch.tensor(copy.deepcopy(task_dict_params["polynoms"][i].coef)) for i in range(x.shape[0])]
-        )
-        coefs = coefs.unsqueeze(1).repeat(1, x.shape[1], 1)
-        # convert coefs to float32
-        data_dict = {"x": x.float(), "y": coefs.float()}  # predict weights from x and y
-        return data_dict, task_dict_params
-
-    @beartype
-    def function(self, x: Tensor, task_params: Dict[str, Any]) -> Tensor:
-        polynoms = task_params["polynoms"]
-        # x.shape = (n_tasks, n_samples, x_dim)
-        # polynoms.shape = (n_tasks)
-        y = torch.zeros(x.shape[0], x.shape[1], 1)
-        for i in range(x.shape[0]):
-            y[i, :, :] += polynoms[i](x[i])
-        mean = y.mean(dim=1, keepdim=True)
-        std = y.std(dim=1, keepdim=True)
-        y = (y - mean) / std
-
-        return y
-
-        """
-        import matplotlib.pyplot as plt
-
-        x_plot = x[1, :, 0].numpy()
-        y_plot = y[1, :, 0].numpy()
-        # Plot as dots
-        plt.figure(figsize=(6, 4))
-        plt.scatter(x_plot, y_plot, label="Synthetic Task Function", color="blue", s=10)  # dot plot
-        plt.title("Sample Tchebyshev-Generated Function")
-        plt.xlabel("x")
-        plt.ylabel("y")
-        plt.grid(True)
-        plt.legend()
-        # Save as PNG
-        plt.savefig("synthetic_task_dot_plot.png", dpi=300)
-        plt.close()
-        """
