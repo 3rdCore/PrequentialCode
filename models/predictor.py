@@ -130,7 +130,11 @@ class MLPPredictor(Predictor):
         self.x_key = x_key
         self.z_key = z_key
         self.y_key = y_key
-        self.z_dim = (x_dim + 1) * h_dim + (n_layers - 2) * (h_dim + 1) * h_dim + (h_dim + 1) * y_dim
+        self.z_dim = (
+            (x_dim + 1) * h_dim
+            + (n_layers - 2) * (h_dim + 1) * h_dim
+            + (h_dim + 1) * y_dim
+        )
 
         self.n_layers = n_layers
         self.h_dim = h_dim
@@ -174,7 +178,9 @@ class MLPPredictor(Predictor):
         ]
 
         w_last_size = self.h_dim * self.y_dim
-        w_last = z[..., -(w_last_size + self.y_dim) : -self.y_dim].view(*z.shape[:-1], self.h_dim, self.y_dim)
+        w_last = z[..., -(w_last_size + self.y_dim) : -self.y_dim].view(
+            *z.shape[:-1], self.h_dim, self.y_dim
+        )
         b_last = z[..., -self.y_dim :].view(*z.shape[:-1], self.y_dim)
 
         y = F.relu(torch.einsum("sbi,sbij->sbj", x, w0) + b0)
@@ -220,7 +226,9 @@ class MLPLowRankPredictor(Predictor):
         for _ in range(n_layers - 2):
             param_shapes += [(h_dim, h_dim), (h_dim,)]
         param_shapes += [(y_dim, h_dim), (y_dim,)]
-        self.ff_upsample = nn.ModuleList([FastFoodUpsample(z_dim, ps) for ps in param_shapes])
+        self.ff_upsample = nn.ModuleList(
+            [FastFoodUpsample(z_dim, ps) for ps in param_shapes]
+        )
 
     @beartype
     def to(self, device):
@@ -259,3 +267,45 @@ class MLPLowRankPredictor(Predictor):
                 x = F.relu(x)
 
         return {self.y_key: x}
+
+
+class FourierPredictor(Predictor):
+    @beartype
+    def __init__(
+        self,
+        x_dim: int,
+        y_dim: int,
+        x_key: str = "x",
+        z_key: str = "z",
+        y_key: str = "y",
+        n_freq: int = 12,
+    ):
+        assert y_dim == 1  # only 1D output supported for now
+        super().__init__()
+        self.x_dim = x_dim
+        self.y_dim = y_dim
+        self.x_key = x_key
+        self.z_key = z_key
+        self.y_key = y_key
+        self.n_freq = n_freq
+        freqs = torch.arange(1, n_freq + 1, dtype=torch.float32) * 2 * torch.pi / 5
+        self.register_buffer("freqs", freqs)
+
+    def forward(self, x: dict[str, Tensor], z: dict[str, Tensor]) -> dict[str, Tensor]:
+        """Predict given inputs x and model parameters z.
+
+        Args:
+            x (dict[str, Tensor]): Input data, with shape (samples, tasks, x_dim) at `x_key`.
+            z (dict[str, Tensor]): Aggregated context information, with shape (samples, tasks, x_dim * n_freqs * 2) at `z_key`.
+
+        Returns:
+            dict[str, Tensor]: Predicted values for y output, with shape (samples, tasks, y_dim) at `y_key`.
+        """
+        x = x[self.x_key]
+        z = z[self.z_key]
+        amplitudes = z.view(*z.shape[:-1], self.x_dim, 2 * self.n_freq)
+        x_sin = torch.sin(x.unsqueeze(-1) * self.freqs.unsqueeze(0))
+        x_cos = torch.cos(x.unsqueeze(-1) * self.freqs.unsqueeze(0))
+        x = torch.cat([x_sin, x_cos], dim=-1)
+        y = (x * amplitudes).sum(dim=-1).sum(dim=-1, keepdim=True)
+        return {self.y_key: y}

@@ -1,0 +1,34 @@
+#@package _global_
+
+task_name: "meta_optimizer"
+
+datamodule:
+  _target_: datasets.interfaces.ICLDataModule
+  batch_size: 256
+  train_dataset: ${dataset.train_dataset}
+  val_dataset: ${dataset.val_dataset}
+
+trainer:
+  max_epochs: 50
+
+callbacks:
+
+task:
+  _target_: tasks.meta_optimizer_regression.MetaOptimizerExplicitForFourierRegression
+  meta_objective: prequential
+  min_train_samples: 1
+  lr: 1e-4
+  context_aggregator:
+    _target_: models.context_aggregator.Transfoptimizer
+    x_dim: ${ast_eval:'${dataset.train_dataset.x_dim} + ${dataset.train_dataset.y_dim}'}
+    z_dim: ${ast_eval:'2 * ${dataset.train_dataset.n_freq} * 4'}
+    h_dim: 256
+    n_layers: 4
+    n_heads: 4
+  predictor:
+    _target_: models.predictor.FourierPredictor
+    x_dim: ${dataset.train_dataset.x_dim}
+    y_dim: ${dataset.train_dataset.y_dim}
+    n_freq: ${ast_eval:'${dataset.train_dataset.n_freq} * 4'}
+  probe_n_context_points: [5, 20, 100]
+  probe_resolution: 1000

@@ -1,0 +1,25 @@
+name: "fourier_regression"
+
+train_dataset:
+  _target_: datasets.regression.FourierRegression
+  x_dim: 1
+  y_dim: 1
+  n_tasks: 10000
+  n_samples: 1000
+  noise: 0.0
+  data_dist: "normal"
+  shuffle_samples: True
+  n_freq: 3
+  coeff_decay: 1.0
+
+val_dataset:
+  _target_: datasets.regression.FourierRegression
+  x_dim: ${dataset.train_dataset.x_dim}
+  y_dim: ${dataset.train_dataset.y_dim}
+  n_tasks: 1000
+  n_samples: ${dataset.train_dataset.n_samples}
+  noise: ${dataset.train_dataset.noise}
+  data_dist: ${dataset.train_dataset.data_dist}
+  shuffle_samples: ${dataset.train_dataset.shuffle_samples}
+  n_freq: ${dataset.train_dataset.n_freq}
+  coeff_decay: ${dataset.train_dataset.coeff_decay}

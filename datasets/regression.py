@@ -49,9 +49,13 @@ class RegressionDataset(SyntheticDataset):
         self.intrinsic_dim = intrinsic_dim if intrinsic_dim is not None else x_dim
 
         if ood_style == "shift_scale" and (ood_shift is None or self.ood_scale is None):
-            raise ValueError("ood_shift and ood_scale must be provided for ood_style='shift_scale'")
+            raise ValueError(
+                "ood_shift and ood_scale must be provided for ood_style='shift_scale'"
+            )
 
-        super().__init__(n_tasks=n_tasks, n_samples=n_samples, shuffle_samples=shuffle_samples)
+        super().__init__(
+            n_tasks=n_tasks, n_samples=n_samples, shuffle_samples=shuffle_samples
+        )
 
     @beartype
     def gen_ood_data(self, x: Tensor, task_dict_params: dict[str, Any]):
@@ -161,7 +165,9 @@ class LinearRegression(RegressionDataset):
         n_tasks = n_tasks if n_tasks is not None else self.n_tasks
         w = torch.randn(n_tasks, self.x_dim + 1, self.y_dim)
         if self.intrinsic_dim is not None:
-            samples = np.random.choice(self.x_dim, self.x_dim - self.intrinsic_dim, replace=False)
+            samples = np.random.choice(
+                self.x_dim, self.x_dim - self.intrinsic_dim, replace=False
+            )
             w[:, samples, :] = 0
             w = w / (self.intrinsic_dim + 1) ** 0.5
         else:
@@ -224,7 +230,6 @@ class SinusoidRegression(RegressionDataset):
         n_tasks = n_tasks if n_tasks is not None else self.n_tasks
         amplitudes = torch.rand(n_tasks, self.x_dim, self.n_freq)
         if self.fixed_freq:
-            freq = self.freqs
             w = amplitudes
         else:
             freq = torch.rand(n_tasks, self.x_dim, self.n_freq) * 5
@@ -242,6 +247,66 @@ class SinusoidRegression(RegressionDataset):
         else:
             amplitudes, freq = w[..., : self.n_freq], w[..., self.n_freq :]
         x = torch.sin(x.unsqueeze(-1) * freq.unsqueeze(1))
+        y = (x * amplitudes.unsqueeze(1)).sum(dim=-1).sum(dim=-1, keepdim=True)
+        return y
+
+
+class FourierRegression(RegressionDataset):
+    @beartype
+    def __init__(
+        self,
+        x_dim: int,
+        y_dim: int,
+        n_tasks: int,
+        n_samples: int,
+        noise: float = 0.0,
+        has_ood: bool = False,
+        ood_style: str = "shift_scale",
+        ood_shift: float | None = 2.0,
+        ood_scale: float | None = 3.0,
+        data_dist: str = "normal",
+        shuffle_samples: bool = True,
+        n_freq: int = 3,
+        coeff_decay: float = 1.0,
+    ):
+        assert y_dim == 1  # only 1D output supported for now
+        self.n_freq = n_freq
+        self.freqs = torch.arange(1, n_freq + 1, dtype=torch.float32) * 2 * torch.pi / 5
+        self.coeff_decay = coeff_decay
+        self.coeff_ranges = torch.exp(torch.linspace(0, -coeff_decay, n_freq))
+
+        super().__init__(
+            x_dim=x_dim,
+            y_dim=y_dim,
+            n_tasks=n_tasks,
+            n_samples=n_samples,
+            noise=noise,
+            has_ood=has_ood,
+            ood_style=ood_style,
+            ood_shift=ood_shift,
+            ood_scale=ood_scale,
+            data_dist=data_dist,
+            shuffle_samples=shuffle_samples,
+        )
+
+    @beartype
+    def sample_task_params(self, n_tasks: int | None = None) -> dict[str, Tensor]:
+        # Linear regression weights
+        n_tasks = n_tasks if n_tasks is not None else self.n_tasks
+        coeff_ranges = self.coeff_ranges.unsqueeze(0).unsqueeze(0)
+        sin_amplitudes = torch.rand(n_tasks, self.x_dim, self.n_freq) * coeff_ranges
+        cos_amplitudes = torch.rand(n_tasks, self.x_dim, self.n_freq) * coeff_ranges
+        amplitudes = torch.cat([sin_amplitudes, cos_amplitudes], dim=-1)
+        return {"amplitudes": amplitudes}
+
+    @beartype
+    def function(self, x: Tensor, task_params: dict[str, Tensor]) -> FloatTensor:
+        # x: (n_tasks, n_samples, x_dim)
+        # w: (n_tasks, x_dim, 2 * n_freq)
+        amplitudes = task_params["amplitudes"]
+        x_sin = torch.sin(x.unsqueeze(-1) * self.freqs.unsqueeze(0))
+        x_cos = torch.cos(x.unsqueeze(-1) * self.freqs.unsqueeze(0))
+        x = torch.cat([x_sin, x_cos], dim=-1)
         y = (x * amplitudes.unsqueeze(1)).sum(dim=-1).sum(dim=-1, keepdim=True)
         return y
 
@@ -313,7 +378,9 @@ class MLPRegression(RegressionDataset):
     @torch.inference_mode()
     def function(self, x: Tensor, task_params: dict[str, Tensor]) -> FloatTensor:
         # x: (n_tasks, n_samples, x_dim)
-        ys = [task_params["w"][idx](x[idx].to(self.device)) for idx in range(x.shape[0])]
+        ys = [
+            task_params["w"][idx](x[idx].to(self.device)) for idx in range(x.shape[0])
+        ]
         return torch.stack(ys)
 
 
@@ -450,13 +517,17 @@ class TchebyshevRegression(RegressionDataset):
         n_tasks = n_tasks if n_tasks is not None else self.n_tasks
         coeffs = np.random.randn(n_tasks, self.x_dim, self.degree + 1, self.y_dim)
 
-        samples = np.random.choice(self.x_dim, self.x_dim - self.intrinsic_dim, replace=False)
+        samples = np.random.choice(
+            self.x_dim, self.x_dim - self.intrinsic_dim, replace=False
+        )
         coeffs[:, samples, :, :] = 0
 
         flat_coeffs = coeffs.reshape(-1, self.degree + 1)
 
         # Create Chebyshev objects for each coefficient vector
-        polynoms = np.array([Chebyshev(c, domain=[-1, 1]) for c in flat_coeffs], dtype=object)
+        polynoms = np.array(
+            [Chebyshev(c, domain=[-1, 1]) for c in flat_coeffs], dtype=object
+        )
         return {"polynoms": polynoms}
 
     @beartype
@@ -515,13 +586,17 @@ class TchebyshevWeightRegression(RegressionDataset):
         n_tasks = n_tasks if n_tasks is not None else self.n_tasks
         coeffs = np.random.randn(n_tasks, self.x_dim, self.y_dim, 1)
 
-        samples = np.random.choice(self.x_dim, self.x_dim - self.intrinsic_dim, replace=False)
+        samples = np.random.choice(
+            self.x_dim, self.x_dim - self.intrinsic_dim, replace=False
+        )
         coeffs[:, samples, :, :] = 0
 
         flat_coeffs = coeffs.reshape(-1, self.y_dim)
 
         # Create Chebyshev objects for each coefficient vector
-        polynoms = np.array([Chebyshev(c, domain=[-1, 1]) for c in flat_coeffs], dtype=object)
+        polynoms = np.array(
+            [Chebyshev(c, domain=[-1, 1]) for c in flat_coeffs], dtype=object
+        )
         return {"polynoms": polynoms}
 
     @beartype
@@ -539,7 +614,10 @@ class TchebyshevWeightRegression(RegressionDataset):
 
         x = torch.cat([x, y], dim=-1)
         coefs = torch.stack(
-            [torch.tensor(copy.deepcopy(task_dict_params["polynoms"][i].coef)) for i in range(x.shape[0])]
+            [
+                torch.tensor(copy.deepcopy(task_dict_params["polynoms"][i].coef))
+                for i in range(x.shape[0])
+            ]
         )
         coefs = coefs.unsqueeze(1).repeat(1, x.shape[1], 1)
         # convert coefs to float32
