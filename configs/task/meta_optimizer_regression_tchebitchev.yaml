@@ -1,0 +1,42 @@
+#@package _global_
+
+defaults:
+  - _self_
+
+task_name: "meta_optimizer"
+
+datamodule:
+  _target_: datasets.interfaces.ICLDataModule
+  batch_size: 256
+  train_dataset: ${dataset.train_dataset}
+  val_dataset: ${dataset.val_dataset}
+
+trainer:
+  max_epochs: 50
+
+
+callbacks:
+  _target_: tasks.meta_optimizer.EarlyStoppingMetaObjective
+  threshold: 0.01  # Maximum allowed increase in loss
+  patience: 5      # Number of epochs to wait before stopping
+
+task:
+  _target_: tasks.meta_optimizer_regression.MetaOptimizerExplicitForRegression
+  meta_objective: prequential
+  min_train_samples: 1
+  lr: 1e-4
+  n_probe_tasks: 8
+  probe_n_context_points: [4, 11]
+  context_aggregator:
+    _target_: models.context_aggregator.Transfoptimizer
+    x_dim: ${ast_eval:'${dataset.train_dataset.x_dim} + ${dataset.train_dataset.y_dim}'}
+    z_dim: ${ast_eval:'${dataset.train_dataset.degree} + 1'}
+    h_dim: 256
+    n_layers: 4
+    n_heads: 4
+  predictor:
+    _target_: models.predictor.TchebyshevPredictor
+    degree: ${dataset.train_dataset.degree}  # Degree of the Tchebyshev polynomial
+    x_key: "x"
+    z_key: "z"
+    y_key: "y"

@@ -4,10 +4,12 @@ train_dataset:
   _target_: datasets.regression.TchebyshevRegression
   x_dim: 1
   y_dim: 1
-  n_tasks: 10000
-  n_samples: 1000
+  n_tasks: 20000
   noise: 0.0
-  degree: 5
+  degree: 10
+  n_samples: 40
+  weight_distribution : "uniform"
+  effective_degree: 4
   has_ood: True
   ood_style: "bimodal"
   ood_shift: 2.0
@@ -22,8 +24,10 @@ val_dataset:
   y_dim: ${dataset.train_dataset.y_dim}
   n_tasks: 1000
   n_samples: ${dataset.train_dataset.n_samples}
+  weight_distribution : ${dataset.train_dataset.weight_distribution}
   noise: ${dataset.train_dataset.noise}
   degree: ${dataset.train_dataset.degree}
+  effective_degree: ${dataset.train_dataset.effective_degree}
   has_ood: ${dataset.train_dataset.has_ood}
   ood_style: ${dataset.train_dataset.ood_style}
   ood_shift: ${dataset.train_dataset.ood_shift}
