@@ -21,7 +21,7 @@ task:
   context_aggregator:
     _target_: models.context_aggregator.Transfoptimizer
     x_dim: ${ast_eval:'${dataset.train_dataset.x_dim} + ${dataset.train_dataset.y_dim}'}
-    z_dim: ${ast_eval:'2 * ${dataset.train_dataset.n_freq} * 4'}
+    z_dim: ${ast_eval:'2 * ${dataset.train_dataset.n_freq} * 20'}
     h_dim: 256
     n_layers: 4
     n_heads: 4
@@ -29,6 +29,6 @@ task:
     _target_: models.predictor.FourierPredictor
     x_dim: ${dataset.train_dataset.x_dim}
     y_dim: ${dataset.train_dataset.y_dim}
-    n_freq: ${ast_eval:'${dataset.train_dataset.n_freq} * 4'}
+    n_freq: ${ast_eval:'${dataset.train_dataset.n_freq} * 20'}
   probe_n_context_points: [5, 20, 100]
   probe_resolution: 1000

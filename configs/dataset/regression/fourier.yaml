@@ -10,7 +10,7 @@ train_dataset:
   data_dist: "normal"
   shuffle_samples: True
   n_freq: 3
-  coeff_decay: 1.0
+  coeff_decay: 0.25
 
 val_dataset:
   _target_: datasets.regression.FourierRegression
