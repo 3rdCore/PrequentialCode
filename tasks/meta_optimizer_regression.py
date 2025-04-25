@@ -145,11 +145,14 @@ class MetaOptimizerExplicitForRegression(MetaOptimizerExplicit):
         dataset.shuffle_samples = shuffle_samples
 
         # True function
+        x_range = (-1, 1)
+        """
         x_range = context["x"].min(), context["x"].max()
         x_range = (
             x_range[0] - 0.2 * (x_range[1] - x_range[0]),
             x_range[1] + 0.2 * (x_range[1] - x_range[0]),
-        )
+        )"""
+
         x = torch.linspace(x_range[0], x_range[1], resolution)
         x = x.unsqueeze(0).unsqueeze(-1)
         x = x.expand(n_probe_tasks, -1, -1)  # (n_probe_tasks, resolution, 1)
@@ -339,6 +342,85 @@ class MetaOptimizerExplicitForFourierRegression(MetaOptimizerExplicitForRegressi
 
         # Log the tables
         self.logger.log_table(f"tables/{mode}-amplitudes_predicted", data=df)
+
+
+class MetaOptimizerExplicitForTchebytchevRegression(MetaOptimizerExplicitForRegression):
+    def __init__(self, *args, predictor: FourierPredictor, **kwargs):
+        super().__init__(*args, predictor=predictor, **kwargs)
+
+    def on_train_end(self):
+        super().on_train_end()
+        self.log_predicted_amplitudes(mode="train_tasks", n_context_points=self.probe_n_context_points)
+        self.log_predicted_amplitudes(mode="val_tasks", n_context_points=self.probe_n_context_points)
+
+    @torch.inference_mode()
+    def log_predicted_amplitudes(
+        self,
+        mode: Literal["train_tasks", "val_tasks"],
+        n_context_points: tuple[int] | None = (1, 4, 10, 50),
+        n_probe_tasks: int = 50,
+    ) -> None:
+        if (
+            self.logger is None
+            or n_context_points is None
+            or not isinstance(self.trainer.datamodule.train_dataset, RegressionDataset)
+        ):
+            return
+
+        # Get the dataset
+        if mode == "train_tasks":
+            dataset: RegressionDataset = self.trainer.datamodule.train_dataset
+        else:
+            dataset: RegressionDataset = self.trainer.datamodule.val_dataset
+
+        # We won't support this logging for problems that are not scalar functions
+        if dataset.x_dim != 1 or dataset.y_dim != 1:
+            return
+
+        # Disable for this function to have better reproducibility
+        shuffle_samples = dataset.shuffle_samples
+        dataset.shuffle_samples = False
+
+        # Get the first `n_probe_tasks` tasks
+        context, _ = next(
+            iter(
+                DataLoader(
+                    dataset,
+                    batch_size=n_probe_tasks,
+                    collate_fn=custom_collate_fn,
+                )
+            )
+        )
+
+        # Restore the dataset's original `shuffle_samples` attribute
+        dataset.shuffle_samples = shuffle_samples
+
+        # Context aggregator predicted z
+        predictor = self.predictor
+        context = {name: context[name].to(self.device) for name in ["x", "y"]}
+        weights = self.context_aggregator.forward(context)[predictor.z_key]
+
+        # torch L2 norm dim 2
+        weights = torch.linalg.norm(
+            weights[:, :, self.trainer.datamodule.train_dataset.effective_degree + 1 :], dim=2
+        )
+
+        # Collect data in tables
+        df = []
+        for task_idx in range(weights.shape[0]):
+            for sample_idx in range(weights.shape[1]):
+                df.append(
+                    {
+                        "task_id": task_idx,
+                        "sample_id": sample_idx,
+                        "weights": weights[task_idx, sample_idx],
+                        "effective_degree": self.trainer.datamodule.train_dataset.effective_degree,
+                    }
+                )
+        df = pd.DataFrame(df)
+
+        # Log the tables
+        self.logger.log_table(f"tables/{mode}-weights_predicted", data=df)
 
 
 class MetaOptimizerImplicitForRegression(MetaOptimizerImplicit):
