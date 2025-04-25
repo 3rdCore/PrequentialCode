@@ -300,6 +300,7 @@ class FourierPredictor(Predictor):
         x_cos = torch.cos(x.unsqueeze(-1) * self.freqs.unsqueeze(0))
         x = torch.cat([x_sin, x_cos], dim=-1)
         y = (x * amplitudes).sum(dim=-1).sum(dim=-1, keepdim=True)
+        return {self.y_key: y}
 
 
 class TchebyshevPredictor(Predictor):
