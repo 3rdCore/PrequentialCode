@@ -79,7 +79,7 @@ class RegressionDataset(SyntheticDataset):
 
         task_dict_params = self.sample_task_params(self.n_tasks)
         y = self.function(x, task_dict_params)
-        y += self.noise * y.std(dim=1, keepdim=True) * torch.randn_like(y)
+        y += self.noise * torch.randn_like(y)
         data_dict = {"x": x, "y": y}
 
         if self.has_ood:  # create ood data
