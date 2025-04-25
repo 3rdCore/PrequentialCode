@@ -2,9 +2,13 @@ import re
 from abc import ABC, abstractmethod
 from enum import Enum
 
+import torch
 from constants import MODEL_CONFIG_MASTERMIND
 from langchain.schema import AIMessage, HumanMessage, SystemMessage
 from langchain_openai import ChatOpenAI
+from vllm import LLM, SamplingParams
+
+from .utils import get_available_gpus
 
 
 class Model(Enum):
@@ -12,9 +16,11 @@ class Model(Enum):
     GPT_4 = "gpt-4", "gpt-4"
     GPT_4O = "gpt-4o", "gpt-4o"
     GPT_4_TURBO = "gpt-4-turbo", "gpt-4-turbo-preview"
-    LLAMA = "llama-2-7b", "meta-llama/Llama-2-7b-chat-hf"
+    LLAMA_2 = "llama-2-7b", "meta-llama/Llama-2-7b-chat-hf"
     LLAMA_3 = "llama-3.1-8b", "meta-llama/Meta-Llama-3.1-8B-Instruct"
-    MISTRAL = "mistral-7b", "mistralai/Mixtral-8x7B-Instruct-v0.1"
+    MISTRAL_1 = "mistral-7b-v1", "mistralai/Mixtral-8x7B-Instruct-v0.1"
+    MISTRAL_2 = "mistral-7b-v2", "mistralai/Mistral-7B-Instruct-v0.2"
+    MISTRAL_3 = "mistral-7b-v3", "mistralai/Mistral-7B-Instruct-v0.3"
     STARCHAT = "starchat-beta", "HuggingFaceH4/starchat-beta"
 
     def __new__(cls, *values):
@@ -52,6 +58,10 @@ class BaseLLM(ABC):
         pass
 
     @abstractmethod
+    def gen_prompt(self, prompt):
+        pass
+
+    @abstractmethod
     def get_logprobs(self, response, value: str):
         pass
 
@@ -84,6 +94,10 @@ class GPT(BaseLLM):
 
         return self.llm.invoke(messages), messages
 
+    def gen_prompt(self, system, context, query):
+        prompt = {"system": system, "context": context, "query": query}
+        return prompt
+
     def get_logprobs(self, response, values: list[str]):
         tokens = response.response_metadata["logprobs"]["content"]
         logprobs_arr = []
@@ -98,5 +112,37 @@ class GPT(BaseLLM):
 def get_model(model_name: str):
     model: Model = Model._value2member_map_[model_name]
     model_config = MODEL_CONFIG_MASTERMIND
-    llm = GPT(model, **model_config)
+    if model in [Model.GPT_35, Model.GPT_4, Model.GPT_4O, Model.GPT_4_TURBO]:
+        llm = GPT(model, **model_config)
+    else:
+        llm = VLLM(model, **model_config)
     return llm
+
+
+##### vLLMS #####
+class VLLM(BaseLLM):
+    def __init__(self, model: Model = Model.LLAMA, **model_kwargs):
+        super().__init__(model.values[0], model.values[1])
+        num_gpus = get_available_gpus()
+        self.llm = LLM(model_name=self.model_id, tensor_parallel_size=max(1, num_gpus))
+        self.sampling_params = SamplingParams(
+            temperature=0, top_k=10, top_p=0.99, max_tokens=4, stop=["\n"], logprobs=5
+        )
+
+    def __call__(self, prompts, messages=[]):
+        responses = self.llm.generate(prompts, self.sampling_params)
+        return responses, messages
+
+    def gen_prompt(self, system, context, query):
+        prompt = f"{system}\n\n{context}\n{query}"
+        return prompt
+
+    def get_logprobs(self, response, value):
+        output_logprobs = []
+        prediction = response.outputs[0].text.strip()
+        logprobs = [
+            (logprob.decoded_token, round(logprob.logprob, 4))
+            for (token, logprob) in response.outputs[0].logprobs[0].items()
+        ]
+        output_logprobs.append(logprobs[0][1])
+        return logprobs

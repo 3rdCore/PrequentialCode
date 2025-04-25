@@ -166,3 +166,11 @@ def sample_words(n_tasks, n_samples, corpus_name) -> Generator[List[str], None, 
         sampled_words = get_words(random.sample(words, n_samples))
         yield sampled_words
     return
+
+
+def get_available_gpus():
+    try:
+        return torch.cuda.device_count()
+    except Exception as e:
+        print(f"Error detecting GPUs: {e}")
+        return 0
