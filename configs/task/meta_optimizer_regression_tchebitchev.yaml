@@ -21,7 +21,7 @@ callbacks:
   patience: 5      # Number of epochs to wait before stopping
 
 task:
-  _target_: tasks.meta_optimizer_regression.MetaOptimizerExplicitForRegression
+  _target_: tasks.meta_optimizer_regression.MetaOptimizerExplicitForTchebytchevRegression
   meta_objective: prequential
   min_train_samples: 1
   lr: 1e-4

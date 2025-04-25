@@ -13,7 +13,7 @@ logger:
   _target_: lightning.pytorch.loggers.WandbLogger
   entity: "dhanya-shridar"
   project: "Prequential-ICL"
-  name: ${now:%Y-%m-%d}_${now:%H-%M-%S}
+  name: ${now:%Y-%m-%d}_${now:%H-%M-%S}_${task.meta_objective}
   save_dir: ${save_dir}
   offline: False
   tags: null
