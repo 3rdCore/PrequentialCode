@@ -407,13 +407,13 @@ class MetaOptimizerExplicitForTchebytchevRegression(MetaOptimizerExplicitForRegr
 
         # Collect data in tables
         df = []
-        for task_idx in range(weights.shape[0]):
-            for sample_idx in range(weights.shape[1]):
+        for task_idx in range(weights.shape[1]):
+            for sample_idx in range(weights.shape[0]):
                 df.append(
                     {
                         "task_id": task_idx,
                         "sample_id": sample_idx,
-                        "weights": weights[task_idx, sample_idx],
+                        "weights": weights[sample_idx, task_idx],
                         "effective_degree": self.trainer.datamodule.train_dataset.effective_degree,
                     }
                 )
