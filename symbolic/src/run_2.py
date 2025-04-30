@@ -2,9 +2,8 @@ import argparse
 import os
 from time import time
 
-from dataset import get_dataset, get_model_config
+from dataset import get_dataset
 from generate import generate_prompts
-from llms import get_model
 from process import process_results
 from query import Query
 from validate import validate_input
@@ -32,23 +31,20 @@ def run(
         "dataset.name": dataset_type,
         "dataset.n_tasks": n_tasks,
         "dataset.n_samples": n_samples,
+        # "dataset.code_length": kwargs["code_length"],
+        # "dataset.num_colours": kwargs["num_colours"],
         "seed": seed,
         "prompt_type": "no_options" if not with_options else "with_options",
         "result_folder": result_folder,
     }
-    for k, v in kwargs.items():
-        metadata[f"dataset.{k}"] = v
-
     result_path = os.path.join(result_path, result_folder)
     dataset = get_dataset(dataset_type, n_tasks, n_samples, **kwargs)
-    data = list(dataset.sample(seed))
-    save_data(metadata, data, result_path)  # not sure about data format.x
+    data = dataset.sample(seed)
+    # save_data(metadata, data, result_path)
     # save_data_v2(metadata, data, result_path)
     system, prompts = generate_prompts(dataset_type, data, with_options)
     save_prompts(system, prompts, result_path)
-    model_config = get_model_config(dataset_type)
-    model = get_model(model_name, model_config)
-    results, query_stats = Query(model, dataset_type, retry=0).query_prompts(system, prompts)
+    results, query_stats = Query(model_name, dataset_type).query_prompts(system, prompts)
     print(
         "Query stats: success(no retry) - {0}, success(with retry) - {1}, failure - {2}".format(*query_stats)
     )
@@ -67,7 +63,6 @@ if __name__ == "__main__":
     parser.add_argument("--seed", "-s", type=int, required=False, default=0)
     parser.add_argument("--result_path", "-r", type=str, required=True)
     parser.add_argument("--with_options", "-o", type=str2bool, required=False, default=False)
-    parser.add_argument("--word_length", "-w", type=int, required=False, default=4)
 
     args = parser.parse_args()
     dataset_type = args.dataset_type
@@ -77,7 +72,6 @@ if __name__ == "__main__":
     seed = args.seed
     result_path = args.result_path
     with_options = args.with_options
-    word_length = args.word_length
     print(
         {
             "Dataset type:": dataset_type,
@@ -89,6 +83,4 @@ if __name__ == "__main__":
             "Options:": with_options,
         }
     )
-    run(
-        dataset_type, model_name, n_tasks, n_samples, seed, result_path, with_options, word_length=word_length
-    )
+    run(dataset_type, model_name, n_tasks, n_samples, seed, result_path, with_options)

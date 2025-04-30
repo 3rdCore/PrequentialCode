@@ -2,25 +2,34 @@ from warnings import warn
 
 import pandas as pd
 from dataset import Datasets
-from llms import get_model
+from llms import BaseLLM, get_model
 from process import Parser, get_parser
 from tqdm import tqdm
 
 
 class Query:
     def __init__(self, model_name: str, dataset_type: str, n_retry=10):
-        self.model_name = model_name
         self.n_retry = n_retry
-        self.parser = get_parser(dataset_type)
         self.model = get_model(model_name)
+        self.parser = get_parser(dataset_type, self.model.extract_answer)
+        self.stat_update_count = 0
+        self.success_no_retry = 0
+        self.success_retry = 0
+        self.failure = 0
+
+    def __init__(self, model: BaseLLM, dataset_type: str, retry=10):
+        self.n_retry = retry
+        self.model = model
+        self.parser = get_parser(dataset_type, self.model.extract_answer)
+        self.stat_update_count = 0
         self.success_no_retry = 0
         self.success_retry = 0
         self.failure = 0
 
     def query_prompts(self, system: str, task_prompts: list[pd.DataFrame]):
         task_results = []
-        for t, prompts in enumerate(task_prompts):
-            results, query_stats = self.query(system, prompts)
+        for prompts in tqdm(task_prompts, total=len(task_prompts), desc="Tasks: "):
+            results, query_stats = self.query_async(system, prompts)
             task_results.append(results)
         return task_results, query_stats
 
@@ -31,7 +40,7 @@ class Query:
         context_message = ""
         for i, query in tqdm(enumerate(queries[1:]), total=len(queries) - 1, desc="Prompts: "):
             context_message += context[i]
-            prompt = {"system": system, "context": context_message, "query": query}
+            prompt = self.model.gen_prompt(system, context_message, query)
             messages = []
             for j in range(self.n_retry + 1):
                 response, messsages = self.model(prompt, messages=messages)
@@ -57,8 +66,39 @@ class Query:
         query_stats = self.get_query_stats()
         return results, query_stats
 
-    def update_query_stats(self, valid, attempt: int):
-        if valid:
+    def query_async(self, system: str, prompts: pd.DataFrame) -> list[str]:
+        results = []
+        context = prompts["context"]
+        queries = prompts["query"]
+        prompts = []
+        context_message = ""
+        for i, query in enumerate(queries):
+            context_message += context[i]
+            prompt = self.model.gen_prompt(system, context_message, query)
+            prompts.append(prompt)
+        responses, messages = self.model(prompts)
+
+        for i, response in enumerate(responses):
+            answer, is_valid, msg = self.parser.parse(response)
+            self.update_query_stats(is_valid, attempt=0)
+            answer = [answer] if type(answer) == str else answer
+            logprobs = self.model.get_logprobs(response, answer)
+            result = {"answer": answer, "logprobs": logprobs, "is_valid": is_valid}
+            if not is_valid:
+                print(f"Error - query {i} failed. Could not parse response after 0 retries.")
+            results.append(result)
+
+        query_stats = self.get_query_stats()
+        failure_count = query_stats[2]
+        if failure_count > 0:
+            msg = f"Query report: {failure_count}/{len(prompts)} queries failed."
+            warn(msg, RuntimeWarning)
+
+        return results, query_stats
+
+    def update_query_stats(self, is_valid, attempt: int):
+        self.stat_update_count += 1
+        if is_valid:
             if attempt == 0:
                 self.success_no_retry += 1
             else:

@@ -4,11 +4,11 @@ from enum import Enum
 
 import torch
 from constants import MODEL_CONFIG_MASTERMIND
-from langchain.schema import AIMessage, HumanMessage, SystemMessage
+from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from langchain_openai import ChatOpenAI
 from vllm import LLM, SamplingParams
 
-from .utils import get_available_gpus
+from utils import get_available_gpus
 
 
 class Model(Enum):
@@ -18,7 +18,7 @@ class Model(Enum):
     GPT_4_TURBO = "gpt-4-turbo", "gpt-4-turbo-preview"
     LLAMA_2 = "llama-2-7b", "meta-llama/Llama-2-7b-chat-hf"
     LLAMA_3 = "llama-3.1-8b", "meta-llama/Meta-Llama-3.1-8B-Instruct"
-    MISTRAL_1 = "mistral-7b-v1", "mistralai/Mixtral-8x7B-Instruct-v0.1"
+    MISTRAL_1 = "mistral-7b-v1", "mistralai/Mistral-7B-Instruct-v0.1"
     MISTRAL_2 = "mistral-7b-v2", "mistralai/Mistral-7B-Instruct-v0.2"
     MISTRAL_3 = "mistral-7b-v3", "mistralai/Mistral-7B-Instruct-v0.3"
     STARCHAT = "starchat-beta", "HuggingFaceH4/starchat-beta"
@@ -73,9 +73,7 @@ class BaseLLM(ABC):
 class GPT(BaseLLM):
     def __init__(self, model: Model = Model.GPT_4, **model_kwargs):
         super().__init__(model.values[0], model.values[1])
-        self.llm = ChatOpenAI(
-            model_name=self.model_id, temperature=0, n=1, max_tokens=4, top_logprobs=20, logprobs=True
-        )
+        self.llm = ChatOpenAI(model_name=self.model_id, temperature=0, n=1, top_logprobs=20, logprobs=True)
 
     def __call__(self, prompt, messages=[]):
         query = prompt["query"]
@@ -98,6 +96,9 @@ class GPT(BaseLLM):
         prompt = {"system": system, "context": context, "query": query}
         return prompt
 
+    def extract_answer(self, response):
+        return response.content.lower()
+
     def get_logprobs(self, response, values: list[str]):
         tokens = response.response_metadata["logprobs"]["content"]
         logprobs_arr = []
@@ -108,41 +109,38 @@ class GPT(BaseLLM):
         return logprobs_arr
 
 
-# use dictionary multimap.
-def get_model(model_name: str):
-    model: Model = Model._value2member_map_[model_name]
-    model_config = MODEL_CONFIG_MASTERMIND
-    if model in [Model.GPT_35, Model.GPT_4, Model.GPT_4O, Model.GPT_4_TURBO]:
-        llm = GPT(model, **model_config)
-    else:
-        llm = VLLM(model, **model_config)
-    return llm
-
-
 ##### vLLMS #####
 class VLLM(BaseLLM):
-    def __init__(self, model: Model = Model.LLAMA, **model_kwargs):
+    def __init__(self, model: Model = Model.LLAMA_3, **model_kwargs):
         super().__init__(model.values[0], model.values[1])
         num_gpus = get_available_gpus()
-        self.llm = LLM(model_name=self.model_id, tensor_parallel_size=max(1, num_gpus))
-        self.sampling_params = SamplingParams(
-            temperature=0, top_k=10, top_p=0.99, max_tokens=4, stop=["\n"], logprobs=5
-        )
+        self.llm = LLM(model=self.model_id, tensor_parallel_size=max(1, num_gpus))
+        self.sampling_params = SamplingParams(temperature=0, top_p=1, max_tokens=1, logprobs=20)
 
     def __call__(self, prompts, messages=[]):
         responses = self.llm.generate(prompts, self.sampling_params)
         return responses, messages
 
     def gen_prompt(self, system, context, query):
-        prompt = f"{system}\n\n{context}\n{query}"
+        prompt = f"{system}{context}{query}"
         return prompt
 
-    def get_logprobs(self, response, value):
-        output_logprobs = []
-        prediction = response.outputs[0].text.strip()
+    def extract_answer(self, response):
+        return response.outputs[0].text.strip()
+
+    def get_logprobs(self, response, values):
         logprobs = [
-            (logprob.decoded_token, round(logprob.logprob, 4))
-            for (token, logprob) in response.outputs[0].logprobs[0].items()
+            [
+                (logprob.decoded_token, round(logprob.logprob, 4))
+                for (token, logprob) in response.outputs[0].logprobs[0].items()
+            ]
+            for value in values
         ]
-        output_logprobs.append(logprobs[0][1])
         return logprobs
+
+
+# use dictionary multimap.
+def get_model(model_name: str, model_config):
+    model: Model = Model._value2member_map_[model_name]
+    llm = GPT if model in [Model.GPT_35, Model.GPT_4, Model.GPT_4O, Model.GPT_4_TURBO] else VLLM
+    return llm(model, **model_config)

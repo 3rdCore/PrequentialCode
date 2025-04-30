@@ -164,6 +164,7 @@ log.txt
 keys/
 results/
 runs/
+experiments
 
 # Keep
 !.gitkeep

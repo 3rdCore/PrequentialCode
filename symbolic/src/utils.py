@@ -1,6 +1,8 @@
 import argparse
+import gzip
 import json
 import os
+import pickle
 import random
 import re
 import subprocess
@@ -11,7 +13,9 @@ import nltk
 import numpy as np
 import pandas as pd
 import torch
-from nltk.corpus import wordnet
+from nltk.corpus import wordnet as wn
+
+WN_WORDS = list(lemma.name() for synset in wn.all_synsets() for lemma in synset.lemmas())
 
 
 def batched_bincount(x: torch.LongTensor, max_val: int) -> torch.LongTensor:
@@ -82,17 +86,30 @@ def load_metadata(result_path):
     return metadata
 
 
+# def save_data(metadata, data, result_path):
+#     with open(os.path.join(result_path, "metadata.json"), "w") as f:
+#         json.dump(metadata, f)
+#     data_path = os.path.join(result_path, "data")
+#     if not os.path.exists(data_path):
+#         os.mkdir(data_path)
+#     x, y = data
+#     with open(os.path.join(data_path, "x.npy"), "wb") as f:
+#         np.save(f, x)
+#     with open(os.path.join(data_path, "y_true.npy"), "wb") as f:
+#         np.save(f, y)
+#     print(f"Data is saved in '{data_path}'")
+#     return data_path
+
+
 def save_data(metadata, data, result_path):
     with open(os.path.join(result_path, "metadata.json"), "w") as f:
         json.dump(metadata, f)
     data_path = os.path.join(result_path, "data")
     if not os.path.exists(data_path):
         os.mkdir(data_path)
-    x, y = data
-    with open(os.path.join(data_path, "x.npy"), "wb") as f:
-        np.save(f, x)
-    with open(os.path.join(data_path, "y_true.npy"), "wb") as f:
-        np.save(f, y)
+    # save list of strings to file
+    with open(os.path.join(data_path, "data.npy"), "wb") as f:
+        np.save(f, data)
     print(f"Data is saved in '{data_path}'")
     return data_path
 
@@ -152,18 +169,10 @@ def ensure_nltk_corpus(corpus_name):
         nltk.download(corpus_name)
 
 
-def sample_words(n_tasks, n_samples, corpus_name) -> Generator[List[str], None, None]:
+def sample_wn_words(n_tasks, n_samples) -> Generator[List[str], None, None]:
     # ensure_nltk_corpus(corpus_name)
-    def get_words(synsets):
-        words = []
-        for synset in synsets:
-            for lemma in synset.lemmas():
-                words.append(lemma.name())
-        return words
-
-    words = list(wordnet.all_synsets())
     for i in range(n_tasks):
-        sampled_words = get_words(random.sample(words, n_samples))
+        sampled_words = random.sample(WN_WORDS, k=n_samples)
         yield sampled_words
     return
 

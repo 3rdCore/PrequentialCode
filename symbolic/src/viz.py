@@ -8,10 +8,8 @@ import wandb
 
 def log_results(metrics, params):
     n_sample_loss = np.array(metrics["n_sample_loss_nexttoken"])
-    n_sample_loss_marg = np.array(metrics["n_sample_loss_nexttoken_marg"])
     probs = np.array(metrics["probs"])
-    probs_rand = np.array(metrics["probs_rand"])
-    probs_marg = np.array(metrics["probs_marg"])
+    n_sample_acc = np.array(metrics["n_sample_accuracy"])
     print("Logging to wandb...")
     name = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     wandb.init(
@@ -21,20 +19,47 @@ def log_results(metrics, params):
         tags=["tejas/llm-symbolic"],
         config=params,
     )
-    for i, (p, p_m, p_r, loss, loss_m) in enumerate(
-        zip(probs, probs_marg, probs_rand, n_sample_loss, n_sample_loss_marg)
-    ):
+    for i, (p, loss, acc) in enumerate(zip(probs, n_sample_loss, n_sample_acc)):
         wandb.log(
             {
                 "n_samples": i + 1,
                 "p": p,
-                "p_marg": p_m,
-                "p_rand": p_r,
                 "n_sample_loss_nexttoken": loss,
-                "n_sample_loss_nexttoken_marg": loss_m,
+                "acc": acc,
             }
         )
     wandb.finish()
+
+
+# def log_results(metrics, params):
+#     n_sample_loss = np.array(metrics["n_sample_loss_nexttoken"])
+#     n_sample_loss_marg = np.array(metrics["n_sample_loss_nexttoken_marg"])
+#     probs = np.array(metrics["probs"])
+#     probs_rand = np.array(metrics["probs_rand"])
+#     probs_marg = np.array(metrics["probs_marg"])
+#     print("Logging to wandb...")
+#     name = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+#     wandb.init(
+#         entity="dhanya-shridar",
+#         project="Prequential-ICL",
+#         name=name,
+#         tags=["tejas/llm-symbolic"],
+#         config=params,
+#     )
+#     for i, (p, p_m, p_r, loss, loss_m) in enumerate(
+#         zip(probs, probs_marg, probs_rand, n_sample_loss, n_sample_loss_marg)
+#     ):
+#         wandb.log(
+#             {
+#                 "n_samples": i + 1,
+#                 "p": p,
+#                 "p_marg": p_m,
+#                 "p_rand": p_r,
+#                 "n_sample_loss_nexttoken": loss,
+#                 "n_sample_loss_nexttoken_marg": loss_m,
+#             }
+#         )
+#     wandb.finish()
 
 
 def plot_y_histogram(result_paths, code_length, ax):

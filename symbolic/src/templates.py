@@ -29,19 +29,14 @@ class PCFGTemplate:
 
 class ShiftCipherTemplate:
     def __init__(self, is_encode: bool = True, with_option=False) -> None:
-        X, Y = tuple(["decode", "encode"][:: (1 if is_encode else -1)])
         self.is_encode = is_encode
-        self.SYSTEM = f"You are a codebreaker. Your task is to {Y} the given text using a shift cipher.\n\n"
-        self.CONTEXT = Template("${X}d: {input}\n${Y}d: {output}\n\n").substitute(X=X, Y=Y)
-        self.RESPONSE_FORMAT = (
-            f"What do you think the {Y}d text is for this text? Just provide the {Y}d text."
-        )
-        self.QUERY = (
-            Template("${X}d: {input}\n${Y}d: ______ ?\n-----------\n\n").substitute(X=X, Y=Y)
-            + self.RESPONSE_FORMAT
-        )
-        self.ERROR_MESSAGE = (
-            f"Answer not in the expected format.\n Make sure to reply with just the {Y}d text."
-        )
+        with open(os.path.abspath(os.path.join(TEMPLATES_PATH, f"shift_cipher_description.md"))) as f:
+            self.SYSTEM = f.read()
+        self.CONTEXT = "X:{input}\nY:{output}\n\n"
+        self.QUERY = "X:{input}\nY:"
+        # self.CONTEXT = "X:{input} -> Y:{output}\n"
+        # self.QUERY = "X:{input} -> Y: ??? (you must predict Y)"
+
+        self.ERROR_MESSAGE = f"Answer not in the expected format.\n Make sure to reply with just the Y."
         self.VALUES = list(map(str, range(1, 26)))
-        self.PATTERN = r"^\s*(\S+)\s*$"
+        self.PATTERN = r"\b([a-zA-Z]+)\b"

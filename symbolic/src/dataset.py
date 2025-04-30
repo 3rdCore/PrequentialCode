@@ -1,13 +1,15 @@
 import random
 from abc import abstractmethod
 from enum import Enum
-from typing import Generator
+from string import ascii_lowercase, ascii_uppercase
+from typing import Generator, List
 
 import numpy as np
 import torch
+from constants import MODEL_CONFIG_MASTERMIND, MODEL_CONFIG_SHIFT_CIPHER
 from torch import LongTensor, Tensor
 
-from .utils import batched_bincount, sample_words
+from utils import batched_bincount
 
 
 class Datasets(Enum):
@@ -19,6 +21,16 @@ class Datasets(Enum):
     @classmethod
     def list(cls):
         return [d.value for d in cls._member_map_.values()]
+
+
+def get_model_config(dataset_type: str) -> dict:
+    dataset_type = Datasets._value2member_map_[dataset_type]
+    if dataset_type == Datasets.MASTERMIND:
+        return MODEL_CONFIG_MASTERMIND
+    elif dataset_type == Datasets.SHIFT_CIPHER:
+        return MODEL_CONFIG_SHIFT_CIPHER
+    else:
+        raise ValueError(f"Unknown dataset type: {dataset_type}")
 
 
 class Dataset:
@@ -74,20 +86,59 @@ class PCFG(Dataset):
 
 
 class ShiftCipher(Dataset):
-    def __init__(self, n_tasks: int, n_samples: int, encode: bool = True, corpus_name: str = "wordnet"):
+    """
+    Shift cipher dataset. The task is to encode a word by shifting its letters by a given amount.
+    Diffculty levels:
+    - 0: no shift
+    - 1: shift
+    - 2: fixed word length
+    - 3: uniform case
+    - 4: random case
+    - 5: exception chracters
+    - 6: random word length
+    - 7: shift and start
+    - 8: shift, start and step
+    """
+
+    def __init__(
+        self,
+        n_tasks: int,
+        n_samples: int,
+        word_length: int = 4,
+        is_uniform: bool = True,
+        has_shift: bool = True,
+        has_start: bool = False,
+        has_step: bool = False,
+        has_exception: bool = False,
+        has_random_length: bool = False,
+        has_random_case: bool = False,
+        encode: bool = True,
+        corpus_name: str = "wordnet",
+    ):
         self.encode = encode
+        self.word_length = word_length
+        self.has_shift = has_shift
+        self.has_start = has_start
+        self.has_step = has_step
+        self.is_uniform = is_uniform
+        self.has_exception = has_exception
+        self.has_random_length = has_random_length
+        self.has_random_case = has_random_case
         self.corpus_name = corpus_name
         super().__init__(n_tasks, n_samples, Datasets.SHIFT_CIPHER)
 
     def sample(self, seed: int = 0) -> Generator[tuple[np.ndarray, np.ndarray], None, None]:
         torch.manual_seed(seed)
-        self.shift = torch.randint(0, 26, size=(self.n_tasks,))
-        # self.start = torch.randint(0, 10, self.n_tasks)
-        self.start = torch.zeros(self.n_tasks)
-        # self.step = torch.randint(1, 10, self.n_tasks)
-        self.step = torch.ones(self.n_tasks)
+        zeros = torch.zeros(size=(self.n_tasks,))
+        ones = torch.ones(size=(self.n_tasks,))
+        self.shift = zeros if not self.has_shift else torch.randint(1, 26, size=(self.n_tasks,))
+        self.start = zeros if not self.has_start else torch.randint(0, self.word_length, size=(self.n_tasks,))
+        self.step = (
+            ones if not self.has_step else torch.randint(1, self.word_length // 2, size=(self.n_tasks,))
+        )
+
         random.seed(seed)
-        word_sampler = sample_words(self.n_tasks, self.n_samples, self.corpus_name)
+        word_sampler = self.sample_words(self.n_tasks, self.n_samples)
         for i in range(self.n_tasks):
             x = []
             y = []
@@ -101,6 +152,22 @@ class ShiftCipher(Dataset):
                     x.append(encoded_word)
                     y.append(word)
             yield x, y
+        return
+
+    def sample_words(self, n_tasks, n_samples) -> Generator[List[str], None, None]:
+        # ensure_nltk_corpus(corpus_name)
+        for samples in range(n_tasks):
+            if self.is_uniform:
+                letters = ascii_lowercase if np.random.rand() <= 0.5 else ascii_uppercase
+            else:
+                letters = ascii_lowercase + ascii_uppercase
+            # TODO incorporate other dificulty levels in shift cipher dataset like -
+            # - has_exception
+            # - has_random_length
+            # - has_random_case
+            samples = np.random.choice(list(letters), size=(n_samples, self.word_length))
+            samples = ["".join(word) for word in list(samples)]
+            yield samples
         return
 
     def __shift_chipher(self, word: str, shift: int = 0, start: int = 0, step: int = 1) -> str:

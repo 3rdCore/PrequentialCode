@@ -1,9 +1,8 @@
 from abc import ABC, abstractmethod
 
 import pandas as pd
-
-from .dataset import Dataset, Datasets
-from .templates import ArcTemplate, MastermindTemplate, PCFGTemplate, ShiftCipherTemplate
+from dataset import Dataset, Datasets
+from templates import ArcTemplate, MastermindTemplate, PCFGTemplate, ShiftCipherTemplate
 
 
 class PromptGenerator(ABC):
@@ -91,8 +90,9 @@ class ShiftCipherGenerator(PromptGenerator):
         return system, task_prompts
 
     def generate_prompt(self, i: int, x, y) -> tuple[str, str]:
+        x, y = x.strip(), y.strip()
         context = self.template.CONTEXT.format(input=x, output=y)
-        prompt = self.template.QUERY.format(input=x, output=y)
+        prompt = self.template.QUERY.format(input=x)
         return context, prompt
 
 
